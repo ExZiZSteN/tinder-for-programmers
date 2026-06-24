@@ -24,6 +24,7 @@ cd tinder-for-devs
 ```bash
 cd frontend 
 npm create vite@latest . -- --template react-js
+npm install -D vite-tsconfig-paths
 ```
 **Установка зависимостей**
 **Маршрутизация, API и состояние**
@@ -34,6 +35,9 @@ npm install react-router-dom axios @tanstack/react-query zustand
 **Tailwind CSS**
 ```bash
 npm install tailwindcss @tailwindcss/vite
+#Нужен VPN на уровне системы (Если в России)
+npx shadcn@latest init 
+#Radix -> Nova
 ```
 
 **Утилиты Tailwind**
@@ -53,6 +57,11 @@ npm install lucide-react
 **Toast уведомления**
 ```bash
 npm install sonner
+```
+
+**Работа с датой и временем**
+```bash
+npm install date-fns
 ```
 
 **Запуск проекта**
