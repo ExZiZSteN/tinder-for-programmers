@@ -18,7 +18,61 @@ git clone <repo-url>
 cd tinder-for-devs
 ```
 
-### 2. Конфигурация
+### 2. Подготовка Frontend 
+
+**Создание проекта**
+```bash
+cd frontend 
+npm create vite@latest . -- --template react-js
+```
+**Установка зависимостей**
+**Маршрутизация, API и состояние**
+```bash
+npm install react-router-dom axios @tanstack/react-query zustand
+```
+
+**Tailwind CSS**
+```bash
+npm install tailwindcss @tailwindcss/vite
+```
+
+**Утилиты Tailwind**
+```bash
+npm install clsx tailwind-merge
+```
+**Формы и валидация**
+```bash
+npm install react-hook-form zod @hookform/resolvers
+```
+
+**Иконки**
+```bash
+npm install lucide-react
+```
+
+**Toast уведомления**
+```bash
+npm install sonner
+```
+
+**Запуск проекта**
+```
+npm run dev
+```
+
+Приложение будет запущено по адресу:
+http://localhost:5173
+
+
+### 3.Подготовка backend
+
+**Установка зависимостей**
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+### 3. Конфигурация
 
 Скопируйте пример env-файла:
 
@@ -54,7 +108,7 @@ EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
 EMBEDDING_DIM=384
 ```
 
-### 3. Запуск сервисов
+### 4. Запуск сервисов
 
 ```bash
 make up
@@ -66,13 +120,13 @@ make up
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-### 4. Применение миграций
+### 5. Применение миграций
 
 ```bash
 make migrate
 ```
 
-### 5. Сидирование тестовых данных
+### 6. Сидирование тестовых данных
 
 ```bash
 make seed
@@ -83,7 +137,7 @@ make seed
 - `owner@example.com` / `password` — владелец проекта
 - `admin@example.com` / `password` — администратор
 
-### 6. Генерация эмбеддингов
+### 7. Генерация эмбеддингов
 
 ```bash
 make embed
