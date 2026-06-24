@@ -1,0 +1,39 @@
+# Python
+
+.venv/
+__pycache__/
+*.pyc
+
+# Environment
+
+.env
+
+# Pytest
+
+.pytest_cache/
+
+# Mypy
+
+.mypy_cache/
+
+# Ruff
+
+.ruff_cache/
+
+# IDE
+
+.vscode/
+.idea/
+
+*.log
+
+node_modules/
+
+dist/
+build/
+.vite/
+.tsbuildinfo
+docker-data/
+postgres-data/
+redis-data/
+minio-data/
