@@ -24,7 +24,7 @@
 
 ```bash
 # 1. Клонировать репозиторий
-git clone <repo-url>
+git clone https://github.com/ExZiZSteN/tinder-for-programmers
 cd tinder-for-programmers
 
 # 2. Скопировать env-файл
