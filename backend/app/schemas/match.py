@@ -1,15 +1,14 @@
 from datetime import datetime
 from typing import Optional
-
+from app.models.match import MatchStatus
 from pydantic import BaseModel
-
 
 class MatchResponse(BaseModel):
     id: int
     user_id: int
     project_id: int
     swipe_id: int
-    status: str
+    status: MatchStatus
     created_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
 

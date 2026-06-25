@@ -1,7 +1,7 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundException
+from app.core.exceptions import NotFoundException, ConflictException
 from app.models.skill import Skill
 from app.models.user import User
 from app.models.user_skill import UserSkill
@@ -19,9 +19,15 @@ class UserService:
 
     async def update_profile(self, user: User, data: UserUpdateRequest) -> UserResponse:
         updates = data.model_dump(exclude_unset=True)
+
+        if "email" in updates:
+            existing = await self.user_repo.get_by_email(updates["email"])
+            if existing and existing.id != user.id:
+                raise ConflictException("Email alredy taken")
         if not updates:
             return UserResponse.model_validate(user)
         updated = await self.user_repo.update(user, **updates)
+        await self.db.commit()
         return UserResponse.model_validate(updated)
 
     async def get_user_by_id(self, user_id: int) -> PublicUserResponse:

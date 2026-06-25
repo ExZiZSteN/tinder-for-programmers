@@ -1,9 +1,13 @@
 from datetime import datetime
 from typing import Optional
-
+from enum import Enum
 from pydantic import BaseModel, Field
 
-
+class ProjectStatus(str, Enum):
+    DRAFT = "draft"
+    OPEN = "open"
+    CLOSED = "closed"
+    ARCHIVED = "archived"
 class SkillResponse(BaseModel):
     id: int
     name: str
@@ -27,7 +31,7 @@ class ProjectResponse(BaseModel):
     description: str
     format: str
     payment_type: str
-    status: str
+    status: ProjectStatus
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     skills: list[SkillResponse] = []
@@ -49,5 +53,5 @@ class ProjectUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, min_length=1, max_length=5000)
     format: Optional[str] = Field(None, pattern=r"^(remote|office|hybrid)$")
     payment_type: Optional[str] = Field(None, pattern=r"^(volunteer|paid|equity)$")
-    status: Optional[str] = Field(None, pattern=r"^(draft|open|closed|archived)$")
+    status: Optional[ProjectStatus] = Field(None, pattern=r"^(draft|open|closed|archived)$")
     skill_ids: Optional[list[int]] = None

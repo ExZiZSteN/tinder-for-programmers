@@ -1,9 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datetime import datetime, timezone, timedelta
 from app.core.exceptions import ConflictException, UnauthorizedException
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    create_refresh_token_with_family,
     decode_token,
     hash_password,
     hash_refresh_token,
@@ -31,10 +33,12 @@ class AuthService:
         )
 
         access_token = create_access_token(subject=user.id)
-        refresh_token, _ = create_refresh_token(subject=user.id)
+        refresh_token, family_id = create_refresh_token(subject=user.id)
         await self.refresh_token_repo.create(
             user_id=user.id,
             token_hash=hash_refresh_token(refresh_token),
+            family_id=family_id,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7)
         )
 
         return TokenResponse(
@@ -48,10 +52,12 @@ class AuthService:
             raise UnauthorizedException("Invalid credentials")
 
         access_token = create_access_token(subject=user.id)
-        refresh_token, _ = create_refresh_token(subject=user.id)
+        refresh_token, family_id = create_refresh_token(subject=user.id)
         await self.refresh_token_repo.create(
             user_id=user.id,
             token_hash=hash_refresh_token(refresh_token),
+            family_id=family_id,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7)
         )
 
         return TokenResponse(
@@ -65,27 +71,34 @@ class AuthService:
         if not stored:
             raise UnauthorizedException("Invalid refresh token")
 
+        if stored.revoked:
+            await self.refresh_token_repo.revoke_family(stored.family_id)
+            raise UnauthorizedException("Token reuse detected")
+
+        if stored.expires_at < datetime.now(timezone.utc):
+            raise UnauthorizedException("Refresh token expired")
+
         try:
-            payload = decode_token(raw_token)
-            if payload.get("type") != "refresh":
-                raise UnauthorizedException("Invalid token type")
+            payload = decode_token(raw_token, expected_type="refresh")
             user_id = int(payload["sub"])
-        except (ValueError, KeyError):
+        except (ValueError, KeyError, TypeError):
             await self.refresh_token_repo.delete(stored)
             raise UnauthorizedException("Invalid refresh token")
 
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get(user_id)
         if not user or not user.is_active or user.is_banned:
             await self.refresh_token_repo.delete(stored)
             raise UnauthorizedException("User not found or inactive")
 
-        await self.refresh_token_repo.delete(stored)
+        await self.refresh_token_repo.revoke_token(stored)
 
         new_access = create_access_token(subject=user.id)
-        new_refresh, _ = create_refresh_token(subject=user.id)
+        new_refresh, new_family_id = create_refresh_token_with_family(subject=user.id, family_id=stored.family_id)
         await self.refresh_token_repo.create(
             user_id=user.id,
             token_hash=hash_refresh_token(new_refresh),
+            family_id=stored.family_id,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
         )
 
         return TokenResponse(
@@ -94,4 +107,4 @@ class AuthService:
         )
 
     async def logout(self, raw_token: str) -> None:
-        await self.refresh_token_repo.delete_by_hash(hash_refresh_token(raw_token))
+        await self.refresh_token_repo.revoke_by_hash(hash_refresh_token(raw_token))

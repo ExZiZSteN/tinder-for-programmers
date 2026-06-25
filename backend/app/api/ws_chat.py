@@ -26,11 +26,11 @@ async def handle_chat_ws(websocket, match_id: int):
     try:
         payload = decode_token(token)
     except ValueError:
-        await websocket.close(code=4001)
+        await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
         return
 
     if payload.get("type") != "access":
-        await websocket.close(code=4001)
+        await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
         return
 
     user_id = int(payload["sub"])

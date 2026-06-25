@@ -109,7 +109,7 @@ class ProjectService:
             found_ids = {s.id for s in existing_skills.scalars().all()}
             missing = to_add - found_ids
             if missing:
-                raise NotFoundException(f"Skills: {missing}")
+                raise NotFoundException(f"Skills: {list(missing)}")
             for skill_id in to_add:
                 self.db.add(ProjectSkill(project_id=project.id, skill_id=skill_id))
         await self.db.flush()

@@ -5,6 +5,7 @@ from app.core.exceptions import ForbiddenException, NotFoundException
 from app.models.match import Match
 from app.models.message import Message
 from app.models.user import User
+from app.repositories.match import MatchRepository
 from app.repositories.message import MessageRepository
 from app.schemas.message import MessageResponse, WSMessageOut
 
@@ -13,10 +14,10 @@ class ChatService:
     def __init__(self, db: AsyncSession):
         self.repo = MessageRepository(db)
         self.db = db
+        self.match_repo = MatchRepository(db)
 
     async def _verify_participant(self, user: User, match_id: int) -> Match:
-        result = await self.db.execute(select(Match).where(Match.id == match_id))
-        match = result.scalar_one_or_none()
+        match = await self.match_repo.get_with_project(match_id)
         if not match:
             raise NotFoundException("Match")
         if match.user_id != user.id and match.project.owner_id != user.id:

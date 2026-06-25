@@ -38,6 +38,20 @@ def create_refresh_token(subject: int | str) -> tuple[str, str]:
     token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return token, family_id
 
+def create_refresh_token_with_family(
+    subject: int | str,
+    family_id: str,
+) -> tuple[str, str]:
+    """Создать refresh token с ЗАДАННЫМ family_id (для ротации)."""
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode = {
+        "sub": str(subject),
+        "exp": expire,
+        "type": "refresh",
+        "family_id": family_id,
+    }
+    token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return token, family_id
 
 def decode_token(token: str, expected_type: str = "access") -> dict:
     try:

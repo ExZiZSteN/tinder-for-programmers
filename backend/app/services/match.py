@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.user import User
+from app.models.match import MatchStatus
 from app.repositories.match import MatchRepository
 from app.schemas.match import MatchResponse
 
@@ -31,9 +32,8 @@ class MatchService:
             raise NotFoundException("Match")
         if match.user_id != user.id and match.project.owner_id != user.id:
             raise ForbiddenException("Not a participant of this match")
-        if match.status != "active":
+        if match.status != MatchStatus.ACTIVE:
             raise BadRequestException("Match is already closed")
 
-        match.status = "closed"
-        match.closed_at = datetime.now(timezone.utc)
+        match = await self.repo.close_status(match)
         await self.db.commit()

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,3 +38,9 @@ class SwipeRepository(BaseRepository[Swipe]):
 
         )
         return list(result.scalars().all())
+
+    async def set_status(self, swipe: Swipe, status: str) -> Swipe:
+        swipe.status = status
+        swipe.reviewed_at = datetime.now(timezone.utc)
+        await self.db.flush()
+        return swipe

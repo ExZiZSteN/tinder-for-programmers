@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Sequence
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from app.models.match import Match
 from app.repositories.base import BaseRepository
 from app.models.project import Project
-
+from app.models.match import MatchStatus
 class MatchRepository(BaseRepository[Match]):
     def __init__(self, db: AsyncSession):
         super().__init__(Match, db)
@@ -62,3 +63,9 @@ class MatchRepository(BaseRepository[Match]):
                 )
         )
         return result.scalar_one_or_none() is not None
+
+    async def close_status(self, match: Match) -> Match:
+        match.status = MatchStatus.CLOSED
+        match.closed_at = datetime.now(timezone.utc)
+        await self.db.flush()
+        return match

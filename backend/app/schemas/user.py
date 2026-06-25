@@ -42,7 +42,6 @@ class UserUpdateRequest(BaseModel):
 
 
 class PublicUserResponse(BaseModel):
-    email: EmailStr
     full_name: str
     bio: Optional[str] = None
     github_url: Optional[str] = None

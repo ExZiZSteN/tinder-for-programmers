@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MessageResponse(BaseModel):
@@ -16,8 +16,11 @@ class MessageResponse(BaseModel):
 
 
 class WSMessageIn(BaseModel):
-    type: str = "message"
-    content: str
+    type: str = Field("message", pattern=r"^message$")
+    content: str = Field(
+        min_length=1,
+        max_length=4000,
+    )
 
 
 class WSMessageOut(BaseModel):

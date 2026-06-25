@@ -10,7 +10,7 @@ from app.repositories.match import MatchRepository
 from app.repositories.project import ProjectRepository
 from app.repositories.swipe import SwipeRepository
 from app.schemas.match import MatchResponse
-from app.schemas.swipe import SwipeCreateRequest, SwipeResponse, SwipeReviewRequest
+from app.schemas.swipe import SwipeCreateRequest, SwipeResponse, SwipeReviewRequest, SwipeStatus
 from app.services.notification import NotificationService
 
 
@@ -19,6 +19,7 @@ class SwipeService:
         self.swipe_repo = SwipeRepository(db)
         self.project_repo = ProjectRepository(db)
         self.match_repo = MatchRepository(db)
+        self.swipe_repo = SwipeRepository(db)
         self.db = db
 
     async def create(self, user: User, data: SwipeCreateRequest) -> SwipeResponse:
@@ -68,16 +69,14 @@ class SwipeService:
         if swipe.project.owner_id != user.id:
             raise ForbiddenException("Only the project owner can review swipes")
 
-        if swipe.status != "pending":
+        if swipe.status != SwipeStatus.PENDING.value:
             raise BadRequestException("Swipe has already been reviewed")
 
-        swipe.status = data.status
-        swipe.reviewed_at = datetime.now(timezone.utc)
+        swipe = await self.swipe_repo.set_status(swipe, data.status)
         await self.db.commit()
-        await self.db.refresh(swipe)
 
         notif = NotificationService(self.db)
-        if data.status == "approved":
+        if data.status == SwipeStatus.APPROVED.value:
             await notif.create(
                 user_id=swipe.user_id,
                 type="swipe_approved",
