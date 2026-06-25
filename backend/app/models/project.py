@@ -1,19 +1,14 @@
-from __future__ import annotations
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
-
+from typing import TYPE_CHECKING,Optional
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 from app.models.base import Base, TimestampMixin
-
 if TYPE_CHECKING:
-    from app.models.match import Match
+    from app.models.project_skill import ProjectSkill
     from app.models.skill import Skill
-    from app.models.swipe import Swipe
     from app.models.user import User
     from app.models.project_member import ProjectMember
-    from app.models.project_skill import ProjectSkill
 
 
 class Project(Base, TimestampMixin):
@@ -32,6 +27,11 @@ class Project(Base, TimestampMixin):
     embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(384), nullable=True)
 
     # Relationships
+    project_skills: Mapped[list["ProjectSkill"]] = relationship(
+        back_populates="project",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
     owner: Mapped["User"] = relationship(back_populates="owned_projects", lazy="selectin")
     skills: Mapped[list["Skill"]] = relationship(
         secondary="project_skills", back_populates="projects", lazy="selectin"
@@ -39,20 +39,4 @@ class Project(Base, TimestampMixin):
     members: Mapped[list["ProjectMember"]] = relationship(
         back_populates="project",
         lazy="selectin",
-        passive_deletes=True,
-    )
-    project_skills: Mapped[list["ProjectSkill"]] = relationship(
-        back_populates="project",
-        lazy="selectin",
-        passive_deletes=True,
-    )
-    swipes: Mapped[list["Swipe"]] = relationship(
-        back_populates="project",
-        lazy="selectin",
-        passive_deletes=True,
-    )
-    matches: Mapped[list["Match"]] = relationship(
-        back_populates="project",
-        lazy="selectin",
-        passive_deletes=True,
     )

@@ -1,23 +1,15 @@
-from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
-from datetime import datetime
-
-from sqlalchemy import String, DateTime, Boolean, BigInteger, Text, SmallInteger
+from sqlalchemy import String, DateTime, func, Boolean, BigInteger, Text, SmallInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from pgvector.sqlalchemy import Vector
+from datetime import datetime
 from app.models.base import Base, TimestampMixin
-from app.models.user_skill import UserSkill
-
 if TYPE_CHECKING:
-    from app.models.file import File
-    from app.models.match import Match
-    from app.models.message import Message
-    from app.models.notification import Notification
     from app.models.skill import Skill
-    from app.models.swipe import Swipe
     from app.models.project import Project
     from app.models.project_member import ProjectMember
+    from app.models.user_skill import UserSkill
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"

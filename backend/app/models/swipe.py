@@ -1,15 +1,8 @@
-from __future__ import annotations
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
-
+from typing import Optional
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
-
-if TYPE_CHECKING:
-    from app.models.project import Project
-    from app.models.user import User
 
 
 class Swipe(Base):

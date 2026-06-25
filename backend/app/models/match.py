@@ -1,18 +1,18 @@
-from __future__ import annotations
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
-
+from typing import Optional
+import enum
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.models.base import Base
+from app.models.swipe import Swipe
+from app.models.user import User
+from app.models.user import Project
 
-if TYPE_CHECKING:
-    from app.models.message import Message
-    from app.models.project import Project
-    from app.models.swipe import Swipe
-    from app.models.user import User
-
+class MatchStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
+    COMPLETED = "complited"
 
 class Match(Base):
     __tablename__ = "matches"
@@ -20,7 +20,7 @@ class Match(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     user_id: Mapped[int] = mapped_column(
         BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users.id", ondelete="CASCADE"), 
         nullable=False,
         index=True
     )
@@ -36,26 +36,23 @@ class Match(Base):
         nullable=False,
         unique=True
     )
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    status: Mapped[str] = mapped_column(
+        SQLEnum(MatchStatus, name="match_status"), 
+        nullable=False,
+        default=MatchStatus.ACTIVE
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
     closed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True),
+        DateTime(timezone=True), 
         nullable=True
     )
-
-    project: Mapped["Project"] = relationship(back_populates="matches", lazy="selectin")
-    user: Mapped["User"] = relationship(back_populates="matches", lazy="selectin")
+    user: Mapped["User"] = relationship(lazy="selectin")
+    project: Mapped["Project"] = relationship(lazy="selectin")
     swipe: Mapped["Swipe"] = relationship(lazy="selectin")
-    messages: Mapped[list["Message"]] = relationship(
-        back_populates="match",
-        lazy="selectin",
-        cascade="all, delete-orphan",
-    )
-
     __table_args__ = (
         UniqueConstraint("user_id", "project_id", name="uq_match_pair"),
     )

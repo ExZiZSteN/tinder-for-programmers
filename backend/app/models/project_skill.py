@@ -1,11 +1,12 @@
 from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
-
 from sqlalchemy import BigInteger, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.models.base import Base
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.skill import Skill
 
 if TYPE_CHECKING:
     from app.models.project import Project
@@ -13,7 +14,6 @@ if TYPE_CHECKING:
 
 
 class ProjectSkill(Base):
-    """Связующая таблица между проектами и навыками/технологиями"""
     __tablename__ = "project_skills"
 
     project_id: Mapped[int] = mapped_column(

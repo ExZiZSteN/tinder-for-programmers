@@ -1,35 +1,58 @@
-from typing import Any, Generic, TypeVar
-
+from typing import Generic, Sequence, TypeVar
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.base import Base
 
-ModelT = TypeVar("ModelT", bound=Base)
 
+ModelType = TypeVar("ModelType", bound=Base)
 
-class BaseRepository(Generic[ModelT]):
-    def __init__(self, db: AsyncSession, model: type[ModelT]):
-        self.db = db
+class BaseRepository(Generic[ModelType]):
+    '''
+    Универасальный CRUD-репозиторий.
+
+    Наследники будут получать операции из коробки
+    и могут переопределять их или расширять
+    '''
+
+    def __init__(self, model: type[ModelType], db: AsyncSession):
         self.model = model
-
-    async def get_by_id(self, id: int) -> ModelT | None:
-        return await self.db.get(self.model, id)
-
-    async def create(self, **kwargs: Any) -> ModelT:
+        self.db = db
+    
+    async def get(self, entity_id: int) -> ModelType | None:
+        return await self.db.get(self.model, entity_id)
+    
+    async def get_or_404(self, id: int) -> ModelType:
+        instance = await self.get(id)
+        if instance is None:
+            from app.core.exceptions import NotFoundException
+            raise NotFoundException(self.model.__name__)
+        return instance
+    
+    async def get_all(self, *, limit: int = 100, offset: int = 0,) -> Sequence[ModelType]:
+        query = (select(self.model).limit(limit).offset(offset))
+        result = await self.db.execute(query)
+        return result.scalars().all()
+    
+    async def create(self, **kwargs) -> ModelType:
         instance = self.model(**kwargs)
         self.db.add(instance)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(instance)
         return instance
 
-    async def update(self, instance: ModelT, **kwargs: Any) -> ModelT:
+    async def update(self, instance: ModelType, **kwargs) -> ModelType:
         for key, value in kwargs.items():
             setattr(instance, key, value)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(instance)
         return instance
 
-    async def delete(self, instance: ModelT) -> None:
+    async def delete(self, instance: ModelType) -> None:
         await self.db.delete(instance)
-        await self.db.commit()
+        await self.db.flush()
+
+    async def save(self, instance: ModelType) -> ModelType:
+        self.db.add(instance)
+        await self.db.flush()
+        await self.db.refresh(instance)
+        return instance

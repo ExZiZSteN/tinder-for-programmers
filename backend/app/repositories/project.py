@@ -1,28 +1,39 @@
-from sqlalchemy import select
-
+from typing import Sequence
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.models.project import Project
 from app.repositories.base import BaseRepository
-
+from app.models.project_skill import ProjectSkill
 
 class ProjectRepository(BaseRepository[Project]):
-    def __init__(self, db):
-        super().__init__(db, Project)
-
-    async def get_by_owner(self, owner_id: int, offset: int = 0, limit: int = 20) -> list[Project]:
+    def __init__(self, db: AsyncSession):
+        super().__init__(Project, db)
+    
+    async def get_by_owner(self, owner_id, *, limit: int = 50, offset: int = 0) -> Sequence[Project]:
         result = await self.db.execute(
-            select(Project)
-            .where(Project.owner_id == owner_id)
-            .offset(offset)
-            .limit(limit)
+            select(Project).where(Project.owner_id == owner_id).limit(limit).offset(offset)
         )
-        return list(result.scalars().all())
-
-    async def list_all(self, offset: int = 0, limit: int = 20) -> list[Project]:
+        return result.scalars().all()
+    
+    async def get_open_projects(self, *, limit: int = 20, offset: int = 0) -> Sequence[Project]:
         result = await self.db.execute(
-            select(Project).offset(offset).limit(limit)
+            select(Project).where(Project.status == "open").order_by(Project.created_at.desc())
+            .limit(limit).offset(offset)
         )
-        return list(result.scalars().all())
-
-    async def count_all(self) -> int:
-        result = await self.db.execute(select(Project))
-        return len(result.scalars().all())
+        return result.scalars().all()
+    
+    async def get_with_skills(self, project_id: int) -> Project | None:
+        result = await self.db.execute(
+            select(Project).options(
+                selectinload(Project.skills).selectinload(ProjectSkill.skill)
+                ).where(Project.id == project_id)
+        )
+        return result.scalar_one_or_none()
+    
+    async def search_by_title(self, query_text: str, *, limit: int = 20) -> Sequence[Project]:
+        result = await self.db.execute(
+            select(Project).where(Project.title.ilike(f"%{query_text}", escape="\\"))
+            .order_by(text("similarity(title, :q) DESC")).params(q=query_text).limit(limit)
+        )
+        return result.scalars().all()
