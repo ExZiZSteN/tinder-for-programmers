@@ -1,12 +1,14 @@
+from typing import TYPE_CHECKING
 from datetime import datetime
 from sqlalchemy import String, DateTime, func, String, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from app.models.base import Base
-from app.models.project import Project
-from app.models.user import User
-from app.models.project_skill import ProjectSkill
-from app.models.user_skill import UserSkill
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.user import User
+    from app.models.project_skill import ProjectSkill
+    from app.models.user_skill import UserSkill
 
 
 class Skill(Base):

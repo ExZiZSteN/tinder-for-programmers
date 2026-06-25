@@ -1,20 +1,21 @@
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import String, DateTime, func, Boolean, BigInteger, Text, SmallInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from pgvector.sqlalchemy import Vector
-from app.models.base import Base, TimestampMixin
-from app.models.skill import Skill
-from app.models.project import Project
-from app.models.project_member import ProjectMember
-from app.models.user_skill import UserSkill
-from typing import Optional
 from datetime import datetime
+from app.models.base import Base, TimestampMixin
+if TYPE_CHECKING:
+    from app.models.skill import Skill
+    from app.models.project import Project
+    from app.models.project_member import ProjectMember
+    from app.models.user_skill import UserSkill
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(BigInteger,primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     user_role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
