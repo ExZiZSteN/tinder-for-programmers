@@ -1,18 +1,20 @@
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 import enum
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-from app.models.swipe import Swipe
-from app.models.user import User
-from app.models.user import Project
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.project import Project
+    from app.models.swipe import Swipe
+    from app.models.message import Message
 
 class MatchStatus(str, enum.Enum):
     ACTIVE = "active"
     CLOSED = "closed"
-    COMPLETED = "complited"
+    COMPLETED = "completed"
 
 class Match(Base):
     __tablename__ = "matches"
@@ -36,7 +38,7 @@ class Match(Base):
         nullable=False,
         unique=True
     )
-    status: Mapped[str] = mapped_column(
+    status: Mapped[MatchStatus] = mapped_column(
         SQLEnum(MatchStatus, name="match_status"), 
         nullable=False,
         default=MatchStatus.ACTIVE
@@ -53,6 +55,11 @@ class Match(Base):
     user: Mapped["User"] = relationship(lazy="selectin")
     project: Mapped["Project"] = relationship(lazy="selectin")
     swipe: Mapped["Swipe"] = relationship(lazy="selectin")
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="match",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
     __table_args__ = (
         UniqueConstraint("user_id", "project_id", name="uq_match_pair"),
     )

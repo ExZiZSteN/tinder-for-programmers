@@ -8,9 +8,6 @@ if TYPE_CHECKING:
     from app.models.project import Project
     from app.models.skill import Skill
 
-if TYPE_CHECKING:
-    from app.models.project import Project
-    from app.models.skill import Skill
 
 
 class ProjectSkill(Base):

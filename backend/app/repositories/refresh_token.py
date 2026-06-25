@@ -1,12 +1,12 @@
 from sqlalchemy import select
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.refresh_token import RefreshToken
 from app.repositories.base import BaseRepository
 
 
 class RefreshTokenRepository(BaseRepository[RefreshToken]):
-    def __init__(self, db):
-        super().__init__(db, RefreshToken)
+    def __init__(self, db: AsyncSession):
+        super().__init__(RefreshToken, db)
 
     async def get_by_hash(self, token_hash: str) -> RefreshToken | None:
         result = await self.db.execute(

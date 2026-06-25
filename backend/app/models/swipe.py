@@ -1,9 +1,11 @@
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.user import User
 
 class Swipe(Base):
     __tablename__ = "swipes"
@@ -32,4 +34,5 @@ class Swipe(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "project_id", name="uq_swipe_per_project"),
+        Index("idx_swipe_project_status", "project_id", "status"),
     )
