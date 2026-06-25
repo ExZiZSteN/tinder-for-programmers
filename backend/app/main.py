@@ -11,7 +11,7 @@ from app.api.ws_notifications import handle_notifications_ws
 from app.core.config import settings
 from app.core.database import engine
 from app.core.minio_client import init_minio_bucket
-from app.models import Base  # noqa: F401 - ensures all models are loaded
+from app.models.base import Base  # noqa: F401 - ensures all models are loaded
 
 
 @asynccontextmanager
