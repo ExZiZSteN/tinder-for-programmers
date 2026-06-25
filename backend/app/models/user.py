@@ -14,9 +14,9 @@ if TYPE_CHECKING:
     from app.models.message import Message
     from app.models.file import File
     from app.models.notification import Notification
+    from app.models.user_skill import UserSkill
 
 def _create_user_skill(skill):
-    from app.models.user_skill import UserSkill
     return UserSkill(skill=skill)
 
 class User(Base, TimestampMixin):
