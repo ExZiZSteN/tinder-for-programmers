@@ -40,7 +40,7 @@ class ProjectMember(Base):
         Boolean, default=True, nullable=False, index=True
     )
 
-    project: Mapped["Project"] = relationship(back_populates="member", lazy="selectin")
+    project: Mapped["Project"] = relationship(back_populates="members", lazy="selectin")
     user: Mapped["User"] = relationship(back_populates="project_memberships", lazy="selectin")
 
     __table_args__ = (

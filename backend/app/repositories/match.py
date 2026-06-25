@@ -1,9 +1,9 @@
 from typing import Sequence
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.match import Match
 from app.repositories.base import BaseRepository
-
+from app.models.project import Project
 
 class MatchRepository(BaseRepository[Match]):
     def __init__(self, db: AsyncSession):
@@ -45,9 +45,11 @@ class MatchRepository(BaseRepository[Match]):
         result = await self.db.execute(
             select(Match)
             .join(Match.project)
-            .where(Match.id == match_id)
+            .where(Match.id == match_id,
+                   or_(
+                       Match.user_id == user_id,
+                       Project.owner_id == user_id,
+                    ),
+                )
         )
-        match = result.scalar_one_or_none()
-        if not match:
-            return False
-        return match.user_id == user_id or match.project.owner_id == user_id
+        return result.scalar_one_or_none() is not None

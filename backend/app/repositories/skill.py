@@ -28,4 +28,11 @@ class SkillRepository(BaseRepository[Skill]):
         existing = await self.get_by_name(name)
         if existing:
             return existing
-        return await self.create(name=name)
+        try:
+            return await self.create(name=name)
+        except:
+            await self.db.rollback()
+            result = await self.get_by_name(name)
+            if result is None:
+                raise
+            return result

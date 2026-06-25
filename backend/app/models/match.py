@@ -1,11 +1,18 @@
 from datetime import datetime
 from typing import Optional
-
+import enum
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
+from app.models.swipe import Swipe
+from app.models.user import User
+from app.models.user import Project
 
+class MatchStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
+    COMPLETED = "complited"
 
 class Match(Base):
     __tablename__ = "matches"
@@ -29,7 +36,11 @@ class Match(Base):
         nullable=False,
         unique=True
     )
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    status: Mapped[str] = mapped_column(
+        SQLEnum(MatchStatus, name="match_status"), 
+        nullable=False,
+        default=MatchStatus.ACTIVE
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -39,7 +50,9 @@ class Match(Base):
         DateTime(timezone=True), 
         nullable=True
     )
-
+    user: Mapped["User"] = relationship(lazy="selectin")
+    project: Mapped["Project"] = relationship(lazy="selectin")
+    swipe: Mapped["Swipe"] = relationship(lazy="selectin")
     __table_args__ = (
         UniqueConstraint("user_id", "project_id", name="uq_match_pair"),
     )

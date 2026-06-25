@@ -35,4 +35,5 @@ class NotificationRepository(BaseRepository[Notification]):
             notif.is_read = True
             notif.read_at = datetime.now(timezone.utc)
             await self.db.flush()
+            await self.db.refresh(notif)
         return notif

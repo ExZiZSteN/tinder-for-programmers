@@ -1,10 +1,10 @@
 from typing import Sequence
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.models.project import Project
 from app.repositories.base import BaseRepository
-
+from app.models.project_skill import ProjectSkill
 
 class ProjectRepository(BaseRepository[Project]):
     def __init__(self, db: AsyncSession):
@@ -25,12 +25,15 @@ class ProjectRepository(BaseRepository[Project]):
     
     async def get_with_skills(self, project_id: int) -> Project | None:
         result = await self.db.execute(
-            select(Project).options(selectinload(Project.skills)).where(Project.id == project_id)
+            select(Project).options(
+                selectinload(Project.skills).selectinload(ProjectSkill.skill)
+                ).where(Project.id == project_id)
         )
         return result.scalar_one_or_none()
     
     async def search_by_title(self, query_text: str, *, limit: int = 20) -> Sequence[Project]:
         result = await self.db.execute(
-            select(Project).where(Project.title.ilike(f"%{query_text}")).limit(limit)
+            select(Project).where(Project.title.ilike(f"%{query_text}", escape="\\"))
+            .order_by(text("similarity(title, :q) DESC")).params(q=query_text).limit(limit)
         )
         return result.scalars().all()
