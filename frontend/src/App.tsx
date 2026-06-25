@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import LoginPage from '@/pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 
 // Pages (заглушки)
-const LoginPage = () => <div>Login Page</div>
-const RegisterPage = () => <div>Register Page</div>
 const FeedPage = () => <div>Feed Page</div>
 const MatchesPage = () => <div>Matches Page</div>
 const ProfilePage = () => <div>Profile Page</div>
