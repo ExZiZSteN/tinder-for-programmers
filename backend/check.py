@@ -1,11 +1,3 @@
-import asyncio
-import sys
-
-# ⚠️ КРИТИЧНО для Windows + asyncpg
-# Должно быть вызвано ДО asyncio.run()
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 from sqlalchemy import text
 from app.core.database import async_session
 from app.repositories.skill import SkillRepository
@@ -40,7 +32,6 @@ async def main():
             assert user is None
             print("✓ get_by_email возвращает None для несуществующего")
             
-            # Откатить тестовые данные
             await session.rollback()
             print("✓ Тестовые данные откачены")
     except Exception as e:
@@ -53,4 +44,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
