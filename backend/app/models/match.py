@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
 if TYPE_CHECKING:
+    from app.models.message import Message
     from app.models.project import Project
     from app.models.swipe import Swipe
     from app.models.user import User
@@ -49,6 +50,11 @@ class Match(Base):
     project: Mapped["Project"] = relationship(back_populates="matches", lazy="selectin")
     user: Mapped["User"] = relationship(back_populates="matches", lazy="selectin")
     swipe: Mapped["Swipe"] = relationship(lazy="selectin")
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="match",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         UniqueConstraint("user_id", "project_id", name="uq_match_pair"),

@@ -531,7 +531,86 @@ Authorization: Bearer <token>
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/chat/{match_id}/messages` | История сообщений |
+| GET | `/chat/{match_id}/messages` | История сообщений (auth) |
+| WS | `/ws/chat/{match_id}` | WebSocket чат в реальном времени |
+
+#### GET /chat/{match_id}/messages — история сообщений
+
+```
+GET /api/chat/1/messages?offset=0&limit=50
+Authorization: Bearer <token>
+```
+
+Только участники матча могут смотреть историю. Пагинация от старых к новым.
+
+**Response** `200 OK`:
+```json
+[
+  {
+    "id": 1,
+    "match_id": 1,
+    "sender_id": 5,
+    "content": "Привет! Готов обсудить проект",
+    "is_read": false,
+    "created_at": "2026-06-25T15:10:00Z"
+  },
+  {
+    "id": 2,
+    "match_id": 1,
+    "sender_id": 4,
+    "content": "Давай!",
+    "is_read": false,
+    "created_at": "2026-06-25T15:10:30Z"
+  }
+]
+```
+
+Ошибки:
+- `403` — не являетесь участником матча
+- `404` — матч не найден
+
+#### WebSocket: ws://localhost:8000/ws/chat/{match_id}
+
+```
+ws://localhost:8000/ws/chat/1?token=<access_token>
+```
+
+Подключение с JWT в query param. Сервер проверяет:
+- токен валидный и это access token
+- пользователь — участник матча (`user_id` или `owner`)
+
+**Отправка сообщения:**
+```json
+{
+  "type": "message",
+  "content": "Привет!"
+}
+```
+
+**Получение (от себя и от собеседника):**
+```json
+{
+  "type": "message",
+  "id": 42,
+  "match_id": 7,
+  "sender_id": 3,
+  "content": "Привет!",
+  "created_at": "2026-06-25T15:10:30Z"
+}
+```
+
+**Ошибка (неверный формат):**
+```json
+{
+  "type": "error",
+  "detail": "Invalid message format"
+}
+```
+
+Коды закрытия:
+- `4001` — невалидный токен / пользователь неактивен
+- `4003` — не участник матча
+- `4004` — матч не найден
 
 ### Notifications
 
@@ -749,4 +828,22 @@ curl -s http://localhost:8000/api/matches/1 \
 # 8. Закрыть матч (любая сторона)
 curl -s -X DELETE http://localhost:8000/api/matches/1 \
   -H "Authorization: Bearer $DEV"
+```
+
+### Чат
+
+```bash
+# 1. История сообщений матча
+curl -s http://localhost:8000/api/chat/1/messages \
+  -H "Authorization: Bearer $DEV"
+
+# 2. WebSocket (через wscat — нужно установить: npm install -g wscat)
+# В одной консоли (разработчик):
+wscat -c "ws://localhost:8000/ws/chat/1?token=<DEV_TOKEN>"
+
+# В другой консоли (owner):
+wscat -c "ws://localhost:8000/ws/chat/1?token=<OWNER_TOKEN>"
+
+# Отправка сообщения (в любой из консолей):
+{"type": "message", "content": "Привет!"}
 ```
