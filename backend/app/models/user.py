@@ -1,20 +1,24 @@
-from sqlalchemy import String, DateTime, func, Boolean, BigInteger, Text, SmallInteger
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
+from datetime import datetime
+
+from sqlalchemy import String, DateTime, Boolean, BigInteger, Text, SmallInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from pgvector.sqlalchemy import Vector
 from app.models.base import Base, TimestampMixin
-from app.models.skill import Skill
-from app.models.project import Project
-from app.models.project_member import ProjectMember
 from app.models.user_skill import UserSkill
-from typing import Optional
-from datetime import datetime
+
+if TYPE_CHECKING:
+    from app.models.skill import Skill
+    from app.models.project import Project
+    from app.models.project_member import ProjectMember
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(BigInteger,primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     user_role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
@@ -31,18 +35,6 @@ class User(Base, TimestampMixin):
     last_login_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True
-    )
-
-    created_at: Mapped[str] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now(),
-        nullable=False
-    )
-    updated_at: Mapped[str] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now(), 
-        onupdate=func.now(),
-        nullable=False
     )
     user_skills: Mapped[list["UserSkill"]] = relationship(
         back_populates="user",

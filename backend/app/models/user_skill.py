@@ -1,9 +1,14 @@
+from __future__ import annotations
 from datetime import datetime
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-from app.models.user import User
-from app.models.skill import Skill
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.skill import Skill
 
 class UserSkill(Base):
     """Связующая таблица между пользователями и навыками"""

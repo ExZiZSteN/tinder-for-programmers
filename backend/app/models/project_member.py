@@ -1,10 +1,14 @@
+from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-from app.models.project import Project
-from app.models.user import User
+
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.user import User
 
 
 class ProjectMember(Base):
@@ -40,7 +44,7 @@ class ProjectMember(Base):
     )
 
     # Relationships
-    project: Mapped["Project"] = relationship(back_populates="member", lazy="selectin")
+    project: Mapped["Project"] = relationship(back_populates="members", lazy="selectin")
     user: Mapped["User"] = relationship(back_populates="project_memberships", lazy="selectin")
 
     __table_args__ = (

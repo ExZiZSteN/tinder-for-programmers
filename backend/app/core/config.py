@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     API_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = "http://localhost:5173"
 
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/tinder_devs"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/tinder_devs"
     REDIS_URL: str = "redis://redis:6379/0"
 
     JWT_ALGORITHM: str = "HS256"

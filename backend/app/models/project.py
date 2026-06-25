@@ -1,12 +1,17 @@
+from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 from app.models.base import Base, TimestampMixin
-from app.models.skill import Skill
-from app.models.user import User
-from app.models.project_member import ProjectMember
+
+if TYPE_CHECKING:
+    from app.models.skill import Skill
+    from app.models.user import User
+    from app.models.project_member import ProjectMember
+    from app.models.project_skill import ProjectSkill
 
 
 class Project(Base, TimestampMixin):
@@ -32,4 +37,10 @@ class Project(Base, TimestampMixin):
     members: Mapped[list["ProjectMember"]] = relationship(
         back_populates="project",
         lazy="selectin",
+        passive_deletes=True,
+    )
+    project_skills: Mapped[list["ProjectSkill"]] = relationship(
+        back_populates="project",
+        lazy="selectin",
+        passive_deletes=True,
     )
