@@ -96,19 +96,19 @@ def build_project_text(project) -> str:
 ## 🎚 Формула скоринга
 
 ```
-final_score = semantic_similarity × 0.6
-            + tech_stack_match × 0.2
-            + experience_relevance × 0.2
+final_score = semantic × 0.6
+            + techStack × 0.2
+            + experience × 0.2
 ```
 
 **Где:**
 - `semantic_similarity` = `1 - cosine_distance(dev_emb, proj_emb)` (0..1)
-- `tech_stack_match` = Jaccard similarity между навыками dev и tech_stack проекта
-- `experience_relevance` = `min(experience_years / 5, 1.0)`
+- `techStack` = Jaccard similarity между навыками dev и tech_stack проекта
+- `experience` = `min(experience_years / 5, 1.0)`
 
 **Пример:**
 - semantic = 0.85
-- tech_stack = 0.70
+- techStack = 0.70
 - experience = 0.80 (4 года)
 - final = 0.85×0.6 + 0.70×0.2 + 0.80×0.2 = **0.81**
 
@@ -119,7 +119,7 @@ final_score = semantic_similarity × 0.6
 ```
 User обновляет профиль
     ↓
-POST /me → Service → DB (сохранение)
+POST users/me → Service → DB (сохранение)
     ↓
 Service ставит задачу в arq: reindex_developer(user_id)
     ↓
