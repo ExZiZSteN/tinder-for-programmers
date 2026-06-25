@@ -17,7 +17,7 @@ class UserRepository(BaseRepository[User]):
     
     async def get_with_skills(self, user_id: int) -> User | None:
         result = await self.db.execute(
-            select(User).options(selectinload(User.skills).selectinload(UserSkill.skill)).where(User.id == user_id)
+            select(User).options(selectinload(User.user_skills).selectinload(UserSkill.skill)).where(User.id == user_id)
         )
         return result.scalar_one_or_none()
     
