@@ -18,7 +18,7 @@ class Swipe(Base):
     message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
@@ -26,6 +26,9 @@ class Swipe(Base):
         DateTime(timezone=True),
         nullable=True
     )
+
+    project: Mapped["Project"] = relationship(back_populates="swipes", lazy="selectin")
+    user: Mapped["User"] = relationship(back_populates="swipes", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint("user_id", "project_id", name="uq_swipe_per_project"),

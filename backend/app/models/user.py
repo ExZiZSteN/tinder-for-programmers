@@ -49,3 +49,28 @@ class User(Base, TimestampMixin):
         back_populates="user",
         lazy="selectin",
     )
+    swipes: Mapped[list["Swipe"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    matches: Mapped[list["Match"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    sent_messages: Mapped[list["Message"]] = relationship(
+        back_populates="sender",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    files: Mapped[list["File"]] = relationship(
+        back_populates="owner",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )

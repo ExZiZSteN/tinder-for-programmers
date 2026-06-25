@@ -1,0 +1,74 @@
+import json
+from sqlalchemy import select
+from app.core.database import async_session
+from app.core.security import decode_token
+from app.core.ws_manager import ws_manager
+from app.models.match import Match
+from app.models.user import User
+from app.schemas.message import WSMessageIn, WSMessageOut
+from app.services.chat import ChatService
+
+
+async def handle_chat_ws(websocket, match_id: int):
+    await websocket.accept()
+
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4001)
+        return
+
+    try:
+        payload = decode_token(token)
+    except ValueError:
+        await websocket.close(code=4001)
+        return
+
+    if payload.get("type") != "access":
+        await websocket.close(code=4001)
+        return
+
+    user_id = int(payload["sub"])
+
+    async with async_session() as db:
+        result = await db.execute(select(Match).where(Match.id == match_id))
+        match = result.scalar_one_or_none()
+        if not match:
+            await websocket.close(code=4004)
+            return
+
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if not user or not user.is_active or user.is_banned:
+            await websocket.close(code=4001)
+            return
+
+        if match.user_id != user_id and match.project.owner_id != user_id:
+            await websocket.close(code=4003)
+            return
+
+        service = ChatService(db)
+        await ws_manager.connect(match_id, user_id, websocket)
+
+        try:
+            while True:
+                raw = await websocket.receive_text()
+                try:
+                    data = json.loads(raw)
+                    msg_in = WSMessageIn(**data)
+                except (json.JSONDecodeError, ValueError):
+                    await websocket.send_json({"type": "error", "detail": "Invalid message format"})
+                    continue
+
+                if msg_in.type != "message":
+                    await websocket.send_json({"type": "error", "detail": "Unknown message type"})
+                    continue
+
+                out = await service.save_message(match_id, user_id, msg_in.content)
+
+                await websocket.send_json(out.model_dump(mode="json"))
+                await ws_manager.broadcast(match_id, out.model_dump(mode="json"), exclude_user_id=user_id)
+
+        except Exception:
+            pass
+        finally:
+            ws_manager.disconnect(match_id, user_id)
