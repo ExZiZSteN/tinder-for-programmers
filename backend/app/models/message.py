@@ -1,10 +1,15 @@
+from __future__ import annotations
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.match import Match
+    from app.models.user import User
 
 
 class Message(Base):
@@ -33,3 +38,6 @@ class Message(Base):
         server_default=func.now(),
         nullable=False
     )
+
+    match: Mapped["Match"] = relationship(back_populates="messages", lazy="selectin")
+    sender: Mapped["User"] = relationship(back_populates="sent_messages", lazy="selectin")

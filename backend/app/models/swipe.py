@@ -1,9 +1,11 @@
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.user import User
 
 class Swipe(Base):
     __tablename__ = "swipes"
@@ -18,7 +20,7 @@ class Swipe(Base):
     message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
@@ -27,6 +29,10 @@ class Swipe(Base):
         nullable=True
     )
 
+    project: Mapped["Project"] = relationship(back_populates="swipes", lazy="selectin")
+    user: Mapped["User"] = relationship(back_populates="swipes", lazy="selectin")
+
     __table_args__ = (
         UniqueConstraint("user_id", "project_id", name="uq_swipe_per_project"),
+        Index("idx_swipe_project_status", "project_id", "status"),
     )

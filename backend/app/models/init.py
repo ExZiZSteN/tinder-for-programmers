@@ -10,6 +10,7 @@ from app.models.skill import Skill
 from app.models.swipe import Swipe
 from app.models.user import User
 from app.models.user_skill import UserSkill
+from app.models.refresh_token import RefreshToken
 
 __all__ = [
     "Base",
@@ -24,4 +25,5 @@ __all__ = [
     "Message",
     "Notification",
     "File",
+    "RefreshToken",
 ]

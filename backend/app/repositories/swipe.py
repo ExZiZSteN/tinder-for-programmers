@@ -22,18 +22,18 @@ class SwipeRepository(BaseRepository[Swipe]):
         .order_by(Swipe.created_at.desc()))
         return result.scalars().all()
     
-    async def get_unviewd_projects(self, user_id: int, limit: int = 20) -> set[int]:
+    async def get_unviewed_projects(self, user_id: int, limit: int = 20) -> set[int]:
         
         swiped_subq = (
             select(Swipe.project_id).where(Swipe.user_id == user_id).scalar_subquery()
         )
 
         result = await self.db.execute(
-            select(Swipe.project_id).where(
+            select(Project.id).where(
                 Project.status == "open",
                 Project.id.notin_(swiped_subq),
                 Project.owner_id != user_id,
                 ).order_by(Project.created_at.desc()).limit(limit)
 
         )
-        return {row[0] for row in result.all()}    
+        return list(result.scalars().all())

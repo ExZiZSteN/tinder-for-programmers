@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Optional
-from sqlalchemy import String, DateTime, func, Boolean, BigInteger, Text, SmallInteger
+from sqlalchemy import String, DateTime, func, Boolean, BigInteger, Text, SmallInteger, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from pgvector.sqlalchemy import Vector
@@ -9,7 +9,15 @@ if TYPE_CHECKING:
     from app.models.skill import Skill
     from app.models.project import Project
     from app.models.project_member import ProjectMember
+    from app.models.swipe import Swipe
+    from app.models.match import Match
+    from app.models.message import Message
+    from app.models.file import File
+    from app.models.notification import Notification
+
+def _create_user_skill(skill):
     from app.models.user_skill import UserSkill
+    return UserSkill(skill=skill)
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
@@ -38,9 +46,10 @@ class User(Base, TimestampMixin):
         lazy="selectin",
         cascade="all, delete-orphan",
     )
+
     skills: Mapped[list["Skill"]] = association_proxy(
         "user_skills", "skill",
-        creator=lambda skill: UserSkill(skill=skill),
+        creator=_create_user_skill,
     )
     owned_projects: Mapped[list["Project"]] = relationship(
         back_populates="owner", lazy="selectin"
@@ -48,4 +57,35 @@ class User(Base, TimestampMixin):
     project_memberships: Mapped[list["ProjectMember"]] = relationship(
         back_populates="user",
         lazy="selectin",
+    )
+    swipes: Mapped[list["Swipe"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    matches: Mapped[list["Match"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    sent_messages: Mapped[list["Message"]] = relationship(
+        back_populates="sender",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    files: Mapped[list["File"]] = relationship(
+        back_populates="owner",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    __table_args__ = (
+        CheckConstraint(
+            "experience_years >= 0 AND experience_years <= 50",
+            name="chk_experience_years_range",
+        ),
     )

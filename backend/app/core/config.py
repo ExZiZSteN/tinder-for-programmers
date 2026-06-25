@@ -70,4 +70,11 @@ class Settings(BaseSettings):
         return v
 
 
+    MINIO_ENDPOINT: str = "minio:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_BUCKET: str = "uploads"
+    MINIO_USE_SSL: bool = False
+    MINIO_EXTERNAL_ENDPOINT: str = "localhost:9000"
+
 settings = Settings()

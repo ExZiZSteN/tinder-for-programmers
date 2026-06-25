@@ -1,6 +1,7 @@
 from typing import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from app.models.skill import Skill
 from app.repositories.base import BaseRepository
@@ -30,9 +31,10 @@ class SkillRepository(BaseRepository[Skill]):
             return existing
         try:
             return await self.create(name=name)
-        except:
+        except IntegrityError:
             await self.db.rollback()
             result = await self.get_by_name(name)
             if result is None:
                 raise
             return result
+    
