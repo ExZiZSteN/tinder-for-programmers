@@ -119,7 +119,7 @@ final_score = semantic × 0.6
 ```
 User обновляет профиль
     ↓
-POST user/me → Service → DB (сохранение)
+POST users/me → Service → DB (сохранение)
     ↓
 Service ставит задачу в arq: reindex_developer(user_id)
     ↓
