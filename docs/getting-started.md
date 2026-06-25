@@ -14,8 +14,8 @@
 ### 1. Клонирование репозитория
 
 ```bash
-git clone <repo-url>
-cd tinder-for-devs
+git clone https://github.com/ExZiZSteN/tinder-for-programmers
+cd tinder-for-programmers
 ```
 
 ### 2. Подготовка Frontend 

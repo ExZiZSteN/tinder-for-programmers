@@ -57,6 +57,7 @@ open http://localhost:5173
 - [Развёртывание](./docs/deployment.md)
 - [Тестирование](./docs/testing.md)
 - [Contributing](./docs/contributing.md)
+- [Troubleshooting](./docs/troubleshooting.md)
 
 ## 🔗 Ссылки
 
