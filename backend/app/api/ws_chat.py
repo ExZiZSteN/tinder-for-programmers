@@ -9,6 +9,12 @@ from app.schemas.message import WSMessageIn, WSMessageOut
 from app.services.chat import ChatService
 
 
+WS_CLOSE_UNAUTHORIZED = 4001    #неавторизован
+WS_CLOSE_FORBIDDEN = 4003       #нет доступа
+WS_CLOSE_NOT_FOUND = 4004       #не найдено
+WS_CLOSE_INTERNAL = 1011        #внутрення ошибка
+
+
 async def handle_chat_ws(websocket, match_id: int):
     await websocket.accept()
 
@@ -32,6 +38,7 @@ async def handle_chat_ws(websocket, match_id: int):
     async with async_session() as db:
         result = await db.execute(select(Match).where(Match.id == match_id))
         match = result.scalar_one_or_none()
+        match = await self.match_repo.get_with_project(match_id)
         if not match:
             await websocket.close(code=4004)
             return

@@ -9,7 +9,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    '''bcrypt обрезает пароли длинеее 72 байт'''
+    return pwd_context.hash(password[:72])
 
 
 def verify_password(plain: str, hashed: str) -> bool:
@@ -38,12 +39,17 @@ def create_refresh_token(subject: int | str) -> tuple[str, str]:
     return token, family_id
 
 
-def decode_token(token: str) -> dict:
+def decode_token(token: str, expected_type: str = "access") -> dict:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        return payload
     except JWTError as e:
         raise ValueError(f"Invalid token: {e}") from e
+    
+    token_type = payload.get("type")
+    if token_type != expected_type:
+        raise ValueError(f"Wrong token type: expected {expected_type}, got {token_type}")
+    
+    return payload
 
 
 def hash_refresh_token(token: str) -> str:

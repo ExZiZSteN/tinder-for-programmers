@@ -3,11 +3,11 @@ from collections.abc import AsyncGenerator
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.repositories.user import User
 from app.core.database import async_session
 from app.core.exceptions import UnauthorizedException
 from app.core.security import decode_token
-from app.models.user import User
+from app.repositories.user import UserRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -24,22 +24,11 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    try:
-        payload = decode_token(token)
-    except ValueError:
-        raise UnauthorizedException("Invalid token")
+    payload = decode_token(token, expected_type="access")
+    user_id = int(payload["sub"])
+    user_repo = UserRepository(db)
 
-    if payload.get("type") != "access":
-        raise UnauthorizedException("Invalid token type")
-
-    user_id = payload.get("sub")
-    if user_id is None:
-        raise UnauthorizedException("Invalid token payload")
-
-    from sqlalchemy import select
-    result = await db.execute(select(User).where(User.id == int(user_id)))
-    user = result.scalar_one_or_none()
-
+    user = await user_repo.get(user_id)
     if user is None:
         raise UnauthorizedException("User not found")
     if not user.is_active:

@@ -26,7 +26,7 @@ class UnauthorizedException(AppException):
 
 
 class ForbiddenException(AppException):
-    def __init__(self, detail: str = "Forbidden"):
+    def __init__(self, detail: str = "Access denied"):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail,
@@ -49,4 +49,12 @@ class ConflictException(AppException):
             status_code=status.HTTP_409_CONFLICT,
             detail=detail,
             code="CONFLICT",
+        )
+
+class InternalServerError(AppException):
+    def __init__(self, detail: str = "Internal server error"):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail,
+            code="INTERNAL_ERROR",
         )

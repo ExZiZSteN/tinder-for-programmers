@@ -1,6 +1,7 @@
 from typing import Sequence
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.models.match import Match
 from app.repositories.base import BaseRepository
 from app.models.project import Project
@@ -40,6 +41,14 @@ class MatchRepository(BaseRepository[Match]):
             )
         )
         return result.scalars().all()
+
+    async def get_with_project(self, match_id: int) -> Match | None:
+        result = await self.db.execute(
+            select(Match)
+            .options(selectinload(Match.project))
+            .where(Match.id == match_id)
+        )
+        return result.scalar_one_or_none()
 
     async def is_participant(self, match_id: int, user_id: int) -> bool:
         result = await self.db.execute(

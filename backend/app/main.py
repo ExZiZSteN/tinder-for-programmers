@@ -4,6 +4,7 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.core.logging import setup_logging
 from app.api.router import api_router
 from app.api.ws_chat import handle_chat_ws
 from app.api.ws_notifications import handle_notifications_ws
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
     yield
     await engine.dispose()
 
+setup_logging()
 
 app = FastAPI(
     title="Tinder for Programmers",

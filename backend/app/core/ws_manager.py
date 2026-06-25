@@ -14,9 +14,20 @@ class ConnectionManager:
             self._connections.pop(match_id, None)
 
     async def broadcast(self, match_id: int, data: dict, exclude_user_id: int | None = None) -> None:
-        for uid, ws in self._connections.get(match_id, {}).items():
+        dead: list[int] = []
+        for uid, ws in list(self._connections.get(match_id, {}).items()):
             if uid == exclude_user_id:
                 continue
+            try:
+                await ws.send_json(data)
+            except Exception:
+                dead.append(uid)
+        
+        for uid in dead:
+            self.disconnect(match_id, uid)
+
+    async def broadcast_to_all(self, data: dict) -> None:
+        for ws in list(self._connections.values()):
             try:
                 await ws.send_json(data)
             except Exception:
