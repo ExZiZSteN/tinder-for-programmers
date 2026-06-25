@@ -30,17 +30,10 @@ cd tinder-for-programmers
 # 2. Скопировать env-файл
 cp .env.example .env
 
-# 3. Поднять все сервисы
-make up
+# 3. Поднять Docker
 
-# 4. Применить миграции
-make migrate
+docker compose up --build
 
-# 5. Запустить сидирование тестовых данных
-make seed
-
-# 6. Открыть в браузере
-open http://localhost:5173
 ```
 
 ## 📚 Документация
