@@ -10,6 +10,7 @@ from app.models.base import Base, TimestampMixin
 from app.models.user_skill import UserSkill
 
 if TYPE_CHECKING:
+    from app.models.file import File
     from app.models.match import Match
     from app.models.message import Message
     from app.models.notification import Notification
@@ -73,6 +74,11 @@ class User(Base, TimestampMixin):
     )
     notifications: Mapped[list["Notification"]] = relationship(
         back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    files: Mapped[list["File"]] = relationship(
+        back_populates="owner",
         lazy="selectin",
         cascade="all, delete-orphan",
     )

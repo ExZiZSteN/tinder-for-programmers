@@ -699,8 +699,73 @@ Push-уведомления в реальном времени. Уведомле
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| POST | `/upload` | Получить presigned URL для загрузки |
-| GET | `/files/{id}` | Получить presigned URL для скачивания |
+| POST | `/files/upload` | Получить presigned URL для загрузки (auth) |
+| GET | `/files/{id}` | Получить presigned URL для скачивания (auth) |
+
+Файлы загружаются напрямую в MinIO (S3-совместимое хранилище) через presigned URL. Сервер выдаёт временную ссылку, по которой клиент делает PUT запрос с телом файла.
+
+#### POST /files/upload — получить ссылку для загрузки
+
+```
+POST /api/files/upload
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "original_name": "resume.pdf",
+  "mime_type": "application/pdf",
+  "size_bytes": 1048576
+}
+```
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|:---:|----------|
+| `original_name` | string | да | Исходное имя файла |
+| `mime_type` | string | да | MIME-тип (например, `application/pdf`) |
+| `size_bytes` | int | да | Размер файла в байтах |
+
+**Response** `201 Created`:
+```json
+{
+  "id": 1,
+  "upload_url": "http://localhost:9000/uploads/a1b2c3d4_resume.pdf?X-Amz-Algorithm=...",
+  "original_name": "resume.pdf",
+  "expires_in": 3600
+}
+```
+
+После получения `upload_url` клиент загружает файл напрямую:
+```bash
+curl -X PUT "<upload_url>" \
+  -H "Content-Type: application/pdf" \
+  --data-binary @resume.pdf
+```
+
+#### GET /files/{id} — получить ссылку для скачивания
+
+```
+GET /api/files/1
+Authorization: Bearer <token>
+```
+
+**Response** `200 OK`:
+```json
+{
+  "id": 1,
+  "owner_id": 1,
+  "original_name": "resume.pdf",
+  "mime_type": "application/pdf",
+  "size_bytes": 1048576,
+  "download_url": "http://localhost:9000/uploads/a1b2c3d4_resume.pdf?X-Amz-Algorithm=...",
+  "created_at": "2026-06-25T15:30:00Z"
+}
+```
+
+Ошибки:
+- `403` — файл не принадлежит текущему пользователю
+- `404` — файл не найден
 
 ## 🔌 WebSocket Endpoints
 
@@ -940,4 +1005,29 @@ wscat -c "ws://localhost:8000/ws/notifications?token=<OWNER_TOKEN>"
 
 # После подключения — сделай свайп от разработчика, и в этой консоли придёт:
 # {"type":"new_swipe","payload":{"swipe_id":1,"developer_name":"Developer","project_title":"Cool Project"},"created_at":"..."}
+```
+
+### Файлы (MinIO)
+
+```bash
+# 1. Получить presigned URL для загрузки
+curl -s -X POST http://localhost:8000/api/files/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"original_name":"resume.pdf","mime_type":"application/pdf","size_bytes":1048576}'
+
+# Сохранить upload_url из ответа
+UPLOAD_URL="<upload_url из ответа>"
+
+# 2. Загрузить файл напрямую в MinIO
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: application/pdf" \
+  --data-binary @resume.pdf
+
+# 3. Получить presigned URL для скачивания
+curl -s http://localhost:8000/api/files/1 \
+  -H "Authorization: Bearer $TOKEN" | jq .
+
+# Скачать файл по полученной ссылке
+# curl -o downloaded_resume.pdf "<download_url>"
 ```

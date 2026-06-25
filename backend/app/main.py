@@ -9,6 +9,7 @@ from app.api.ws_chat import handle_chat_ws
 from app.api.ws_notifications import handle_notifications_ws
 from app.core.config import settings
 from app.core.database import engine
+from app.core.minio_client import init_minio_bucket
 from app.models import Base  # noqa: F401 - ensures all models are loaded
 
 
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
+    await init_minio_bucket()
     yield
     await engine.dispose()
 
