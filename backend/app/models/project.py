@@ -8,7 +8,9 @@ from pgvector.sqlalchemy import Vector
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.match import Match
     from app.models.skill import Skill
+    from app.models.swipe import Swipe
     from app.models.user import User
     from app.models.project_member import ProjectMember
     from app.models.project_skill import ProjectSkill
@@ -40,6 +42,16 @@ class Project(Base, TimestampMixin):
         passive_deletes=True,
     )
     project_skills: Mapped[list["ProjectSkill"]] = relationship(
+        back_populates="project",
+        lazy="selectin",
+        passive_deletes=True,
+    )
+    swipes: Mapped[list["Swipe"]] = relationship(
+        back_populates="project",
+        lazy="selectin",
+        passive_deletes=True,
+    )
+    matches: Mapped[list["Match"]] = relationship(
         back_populates="project",
         lazy="selectin",
         passive_deletes=True,

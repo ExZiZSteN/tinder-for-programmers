@@ -10,7 +10,9 @@ from app.models.base import Base, TimestampMixin
 from app.models.user_skill import UserSkill
 
 if TYPE_CHECKING:
+    from app.models.match import Match
     from app.models.skill import Skill
+    from app.models.swipe import Swipe
     from app.models.project import Project
     from app.models.project_member import ProjectMember
 
@@ -51,4 +53,14 @@ class User(Base, TimestampMixin):
     project_memberships: Mapped[list["ProjectMember"]] = relationship(
         back_populates="user",
         lazy="selectin",
+    )
+    swipes: Mapped[list["Swipe"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    matches: Mapped[list["Match"]] = relationship(
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
     )

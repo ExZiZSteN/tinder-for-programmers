@@ -338,18 +338,194 @@ Authorization: Bearer <token>
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/feed` | Лента рекомендаций |
-| POST | `/swipes` | Свайп (лайк) |
-| GET | `/swipes/inbox` | Входящие отклики (для владельца) |
-| PATCH | `/swipes/{id}/review` | Одобрить/отклонить |
+| GET | `/feed` | Лента рекомендаций (auth) |
+| POST | `/swipes` | Свайп (откликнуться на проект, auth) |
+| GET | `/swipes/inbox` | Входящие отклики (auth, для owner) |
+| PATCH | `/swipes/{id}/review` | Одобрить/отклонить (auth, только owner) |
+
+#### GET /feed — лента рекомендаций
+
+```
+GET /api/feed?offset=0&limit=20
+Authorization: Bearer <token>
+```
+
+Проекты, на которые пользователь ещё не откликался. Свои проекты исключены. `offset` (≥0, по умолч. 0) и `limit` (1–100, по умолч. 20) опциональны.
+
+**Response** `200 OK` — массив `ProjectResponse` (тот же формат, что в `GET /projects`)
+
+#### POST /swipes — откликнуться на проект
+
+```
+POST /api/swipes
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "project_id": 1,
+  "message": "Хочу участвовать! У меня есть опыт с Python"
+}
+```
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|:---:|----------|
+| `project_id` | int | да | ID проекта |
+| `message` | string | нет | Сопроводительное сообщение |
+
+Ошибки:
+- `400` — нельзя откликнуться на свой проект
+- `400` — повторный отклик на тот же проект (ограничение `uq_swipe_per_project`)
+
+**Response** `201 Created`:
+```json
+{
+  "id": 1,
+  "user_id": 2,
+  "project_id": 1,
+  "message": "Хочу участвовать!",
+  "status": "pending",
+  "created_at": "2026-06-25T15:00:00Z",
+  "reviewed_at": null
+}
+```
+
+#### GET /swipes/inbox — входящие отклики
+
+```
+GET /api/swipes/inbox
+Authorization: Bearer <token>
+```
+
+Все отклики на проекты, где текущий пользователь — owner. Сортировка по `created_at` (сначала новые).
+
+**Response** `200 OK` — массив `SwipeResponse`:
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": 2,
+    "project_id": 1,
+    "message": "Хочу участвовать!",
+    "status": "pending",
+    "created_at": "2026-06-25T15:00:00Z",
+    "reviewed_at": null
+  }
+]
+```
+
+#### PATCH /swipes/{id}/review — одобрить/отклонить
+
+```
+PATCH /api/swipes/1/review
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "status": "approved"
+}
+```
+
+| Поле | Тип | Допустимые значения |
+|------|-----|---------------------|
+| `status` | string | `approved`, `rejected` |
+
+Если `status = "approved"` — автоматически создаётся `Match` со статусом `active`.
+
+Ошибки:
+- `403` — только owner проекта может ревьюить
+- `400` — отклик уже обработан
+
+**Response** `200 OK`:
+- При `approved` — `MatchResponse`
+- При `rejected` — обновлённый `SwipeResponse`
+
+```json
+// При approved:
+{
+  "id": 1,
+  "user_id": 2,
+  "project_id": 1,
+  "swipe_id": 1,
+  "status": "active",
+  "created_at": "2026-06-25T15:01:00Z",
+  "closed_at": null
+}
+
+// При rejected:
+{
+  "id": 1,
+  "user_id": 2,
+  "project_id": 1,
+  "message": "Хочу участвовать!",
+  "status": "rejected",
+  "created_at": "2026-06-25T15:00:00Z",
+  "reviewed_at": "2026-06-25T15:05:00Z"
+}
+```
 
 ### Matches
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/matches` | Список матчей |
-| GET | `/matches/{id}` | Детали матча |
-| DELETE | `/matches/{id}` | Закрыть матч |
+| GET | `/matches` | Список матчей (auth) |
+| GET | `/matches/{id}` | Детали матча (auth) |
+| DELETE | `/matches/{id}` | Закрыть матч (auth) |
+
+#### GET /matches — список матчей
+
+```
+GET /api/matches
+Authorization: Bearer <token>
+```
+
+Все матчи, где пользователь — либо откликнувшийся разработчик, либо owner проекта. Сортировка по `created_at` (сначала новые).
+
+**Response** `200 OK`:
+```json
+[
+  {
+    "id": 1,
+    "user_id": 2,
+    "project_id": 1,
+    "swipe_id": 1,
+    "status": "active",
+    "created_at": "2026-06-25T15:01:00Z",
+    "closed_at": null
+  }
+]
+```
+
+#### GET /matches/{id} — детали матча
+
+```
+GET /api/matches/1
+Authorization: Bearer <token>
+```
+
+**Response** `200 OK` — `MatchResponse` (тот же формат, что в списке)
+
+Ошибки:
+- `403` — не являетесь участником матча
+
+#### DELETE /matches/{id} — закрыть матч
+
+```
+DELETE /api/matches/1
+Authorization: Bearer <token>
+```
+
+Закрывает матч (status → `closed`, `closed_at` = now).
+
+Ошибки:
+- `403` — не являетесь участником матча
+- `400` — матч уже закрыт
+
+**Response:** `204 No Content`
 
 ### Chat
 
@@ -511,4 +687,66 @@ curl -s -X PATCH http://localhost:8000/api/projects/1 \
 # 5. Удалить проект (только owner)
 curl -s -X DELETE http://localhost:8000/api/projects/1 \
   -H "Authorization: Bearer $TOKEN"
+```
+
+### Feed, Swipes и Matches
+
+```bash
+# 0. Нужны два токена: owner (создаёт проект) и developer (откликается)
+# Зарегистрировать owner'а
+curl -s -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"owner@test.com","password":"pass123","full_name":"Project Owner"}'
+
+# Сохранить токен owner'а
+OWNER="<access_token owner'а>"
+
+# Зарегистрировать разработчика
+curl -s -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"dev@test.com","password":"pass123","full_name":"Developer"}'
+
+# Сохранить токен разработчика
+DEV="<access_token разработчика>"
+
+# 1. Owner создаёт проект
+curl -s -X POST http://localhost:8000/api/projects \
+  -H "Authorization: Bearer $OWNER" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Cool Project","description":"Need a Python dev","format":"remote","payment_type":"volunteer"}'
+
+# 2. Developer смотрит ленту
+curl -s http://localhost:8000/api/feed \
+  -H "Authorization: Bearer $DEV"
+
+# 3. Developer откликается на проект
+curl -s -X POST http://localhost:8000/api/swipes \
+  -H "Authorization: Bearer $DEV" \
+  -H "Content-Type: application/json" \
+  -d '{"project_id":1,"message":"Хочу участвовать!"}'
+
+# 4. Owner проверяет входящие
+curl -s http://localhost:8000/api/swipes/inbox \
+  -H "Authorization: Bearer $OWNER"
+
+# 5. Owner одобряет отклик (создаётся Match)
+curl -s -X PATCH http://localhost:8000/api/swipes/1/review \
+  -H "Authorization: Bearer $OWNER" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"approved"}'
+
+# 6. Список матчей (для обеих сторон)
+curl -s http://localhost:8000/api/matches \
+  -H "Authorization: Bearer $DEV"
+
+curl -s http://localhost:8000/api/matches \
+  -H "Authorization: Bearer $OWNER"
+
+# 7. Детали матча
+curl -s http://localhost:8000/api/matches/1 \
+  -H "Authorization: Bearer $DEV"
+
+# 8. Закрыть матч (любая сторона)
+curl -s -X DELETE http://localhost:8000/api/matches/1 \
+  -H "Authorization: Bearer $DEV"
 ```
