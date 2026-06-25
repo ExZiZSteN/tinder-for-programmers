@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from app.api.router import api_router
 from app.api.ws_chat import handle_chat_ws
+from app.api.ws_notifications import handle_notifications_ws
 from app.core.config import settings
 from app.core.database import engine
 from app.models import Base  # noqa: F401 - ensures all models are loaded
@@ -39,6 +40,10 @@ app.include_router(api_router, prefix="/api")
 @app.websocket("/ws/chat/{match_id}")
 async def chat_websocket(websocket: WebSocket, match_id: int):
     await handle_chat_ws(websocket, match_id)
+
+@app.websocket("/ws/notifications")
+async def notifications_websocket(websocket: WebSocket):
+    await handle_notifications_ws(websocket)
 
 @app.get("/")
 async def root():

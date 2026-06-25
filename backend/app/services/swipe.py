@@ -11,6 +11,7 @@ from app.repositories.project import ProjectRepository
 from app.repositories.swipe import SwipeRepository
 from app.schemas.match import MatchResponse
 from app.schemas.swipe import SwipeCreateRequest, SwipeResponse, SwipeReviewRequest
+from app.services.notification import NotificationService
 
 
 class SwipeService:
@@ -39,6 +40,20 @@ class SwipeService:
             project_id=data.project_id,
             message=data.message,
         )
+
+        notif = NotificationService(self.db)
+        await notif.create(
+            user_id=project.owner_id,
+            type="new_swipe",
+            title="Новый отклик",
+            body=f"{user.full_name} хочет присоединиться к проекту «{project.title}»",
+            payload={
+                "swipe_id": swipe.id,
+                "developer_name": user.full_name,
+                "project_title": project.title,
+            },
+        )
+
         return SwipeResponse.model_validate(swipe)
 
     async def get_inbox(self, user: User) -> list[SwipeResponse]:
@@ -61,7 +76,16 @@ class SwipeService:
         await self.db.commit()
         await self.db.refresh(swipe)
 
+        notif = NotificationService(self.db)
         if data.status == "approved":
+            await notif.create(
+                user_id=swipe.user_id,
+                type="swipe_approved",
+                title="Отклик одобрен",
+                body=f"Ваш отклик на проект «{swipe.project.title}» одобрен",
+                payload={"swipe_id": swipe.id, "project_title": swipe.project.title},
+            )
+
             existing = await self.match_repo.get_active_by_project_and_user(
                 project_id=swipe.project_id,
                 user_id=swipe.user_id,
@@ -74,6 +98,41 @@ class SwipeService:
                 project_id=swipe.project_id,
                 swipe_id=swipe.id,
             )
+
+            from app.repositories.user import UserRepository
+            developer = await UserRepository(self.db).get_by_id(swipe.user_id)
+            dev_name = developer.full_name if developer else "Разработчик"
+            await notif.create(
+                user_id=swipe.project.owner_id,
+                type="new_match",
+                title="Новый мэтч!",
+                body=f"У вас мэтч с {dev_name} по проекту «{swipe.project.title}»",
+                payload={
+                    "match_id": match.id,
+                    "project_title": swipe.project.title,
+                    "developer_name": dev_name,
+                },
+            )
+            await notif.create(
+                user_id=swipe.user_id,
+                type="new_match",
+                title="Новый мэтч!",
+                body=f"У вас мэтч с проектом «{swipe.project.title}»",
+                payload={
+                    "match_id": match.id,
+                    "project_title": swipe.project.title,
+                    "developer_name": dev_name,
+                },
+            )
+
             return MatchResponse.model_validate(match)
+
+        await notif.create(
+            user_id=swipe.user_id,
+            type="swipe_rejected",
+            title="Отклик отклонён",
+            body=f"Ваш отклик на проект «{swipe.project.title}» отклонён",
+            payload={"swipe_id": swipe.id, "project_title": swipe.project.title},
+        )
 
         return SwipeResponse.model_validate(swipe)

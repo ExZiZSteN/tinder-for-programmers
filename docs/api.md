@@ -616,8 +616,84 @@ ws://localhost:8000/ws/chat/1?token=<access_token>
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/notifications` | Список уведомлений |
-| PATCH | `/notifications/{id}/read` | Отметить прочитанным |
+| GET | `/notifications` | Список уведомлений (auth) |
+| PATCH | `/notifications/{id}/read` | Отметить прочитанным (auth) |
+| WS | `/ws/notifications` | WebSocket для push-уведомлений |
+
+#### GET /notifications — список уведомлений
+
+```
+GET /api/notifications
+Authorization: Bearer <token>
+```
+
+Сортировка от новых к старым.
+
+**Response** `200 OK`:
+```json
+{
+  "notifications": [
+    {
+      "id": 1,
+      "user_id": 4,
+      "type": "new_swipe",
+      "title": "Новый отклик",
+      "body": "Developer хочет присоединиться к проекту «Cool Project»",
+      "payload": {
+        "swipe_id": 1,
+        "developer_name": "Developer",
+        "project_title": "Cool Project"
+      },
+      "is_read": false,
+      "read_at": null,
+      "created_at": "2026-06-25T15:10:00Z"
+    }
+  ],
+  "unread_count": 1
+}
+```
+
+#### PATCH /notifications/{id}/read — отметить прочитанным
+
+```
+PATCH /api/notifications/1/read
+Authorization: Bearer <token>
+```
+
+Только владелец уведомления может отметить. `is_read` → `true`, `read_at` = now.
+
+**Response** `200 OK` — обновлённый `NotificationResponse`
+
+Ошибки:
+- `404` — уведомление не найдено или не принадлежит пользователю
+
+#### WebSocket: ws://localhost:8000/ws/notifications
+
+```
+ws://localhost:8000/ws/notifications?token=<access_token>
+```
+
+Push-уведомления в реальном времени. Уведомления создаются автоматически:
+
+| Событие | Тип | Кому |
+|---------|-----|------|
+| Отклик на проект | `new_swipe` | owner проекта |
+| Одобрение отклика | `swipe_approved` | разработчик |
+| Отклонение отклика | `swipe_rejected` | разработчик |
+| Новый мэтч | `new_match` | оба участника |
+
+**Формат получения:**
+```json
+{
+  "type": "new_swipe",
+  "payload": {
+    "swipe_id": 1,
+    "developer_name": "John Doe",
+    "project_title": "Cool Project"
+  },
+  "created_at": "2026-06-25T15:10:00Z"
+}
+```
 
 ### Files
 
@@ -846,4 +922,22 @@ wscat -c "ws://localhost:8000/ws/chat/1?token=<OWNER_TOKEN>"
 
 # Отправка сообщения (в любой из консолей):
 {"type": "message", "content": "Привет!"}
+```
+
+### Уведомления
+
+```bash
+# 1. Список уведомлений
+curl -s http://localhost:8000/api/notifications \
+  -H "Authorization: Bearer $DEV"
+
+# 2. Отметить прочитанным
+curl -s -X PATCH http://localhost:8000/api/notifications/1/read \
+  -H "Authorization: Bearer $OWNER"
+
+# 3. WebSocket push-уведомления (через wscat)
+wscat -c "ws://localhost:8000/ws/notifications?token=<OWNER_TOKEN>"
+
+# После подключения — сделай свайп от разработчика, и в этой консоли придёт:
+# {"type":"new_swipe","payload":{"swipe_id":1,"developer_name":"Developer","project_title":"Cool Project"},"created_at":"..."}
 ```

@@ -12,6 +12,7 @@ from app.models.user_skill import UserSkill
 if TYPE_CHECKING:
     from app.models.match import Match
     from app.models.message import Message
+    from app.models.notification import Notification
     from app.models.skill import Skill
     from app.models.swipe import Swipe
     from app.models.project import Project
@@ -67,6 +68,11 @@ class User(Base, TimestampMixin):
     )
     sent_messages: Mapped[list["Message"]] = relationship(
         back_populates="sender",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="user",
         lazy="selectin",
         cascade="all, delete-orphan",
     )
