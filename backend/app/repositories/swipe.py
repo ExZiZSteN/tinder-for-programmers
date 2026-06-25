@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.models.swipe import Swipe
 from app.repositories.base import BaseRepository
+from app.models.project import Project
 
 class SwipeRepository(BaseRepository[Swipe]):
     def __init__(self, db: AsyncSession):
@@ -21,8 +22,18 @@ class SwipeRepository(BaseRepository[Swipe]):
         .order_by(Swipe.created_at.desc()))
         return result.scalars().all()
     
-    async def get_swiped_project_ids(self, user_id: int) -> set[int]:
+    async def get_unviewd_projects(self, user_id: int, limit: int = 20) -> set[int]:
+        
+        swiped_subq = (
+            select(Swipe.project_id).where(Swipe.user_id == user_id).scalar_subquery()
+        )
+
         result = await self.db.execute(
-            select(Swipe.project_id).where(Swipe.user_id == user_id)
+            select(Swipe.project_id).where(
+                Project.status == "open",
+                Project.id.notin_(swiped_subq),
+                Project.owner_id != user_id,
+                ).order_by(Project.created_at.desc()).limit(limit)
+
         )
         return {row[0] for row in result.all()}    

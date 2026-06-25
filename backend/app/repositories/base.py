@@ -18,20 +18,20 @@ class BaseRepository(Generic[ModelType]):
         self.model = model
         self.db = db
     
-    async def get(self, id: int) -> ModelType | None:
-        return await self.db.get(self.model, id)
+    async def get(self, entity_id: int) -> ModelType | None:
+        return await self.db.get(self.model, entity_id)
     
     async def get_or_404(self, id: int) -> ModelType:
-        isinstance = await self.get(id)
-        if isinstance is None:
+        instance = await self.get(id)
+        if instance is None:
             from app.core.exceptions import NotFoundException
             raise NotFoundException(self.model.__name__)
-        return isinstance
+        return instance
     
     async def get_all(self, *, limit: int = 100, offset: int = 0,) -> Sequence[ModelType]:
         query = (select(self.model).limit(limit).offset(offset))
         result = await self.db.execute(query)
-        return result.scalar().all()
+        return result.scalars().all()
     
     async def create(self, **kwargs) -> ModelType:
         instance = self.model(**kwargs)

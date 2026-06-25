@@ -1,5 +1,5 @@
 from typing import Sequence
-from sqlalchemy import select
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.message import Message
 from app.repositories.base import BaseRepository
@@ -27,28 +27,24 @@ class MessageRepository(BaseRepository[Message]):
 
     async def mark_read(self, match_id: int, user_id: int) -> int:
         from datetime import datetime, timezone
-        
+        now = datetime.now(timezone.utc)
         result = await self.db.execute(
-            select(Message).where(
+            update(Message).where(
                 Message.match_id == match_id,
                 Message.sender_id != user_id,
                 Message.is_read == False,  # noqa: E712
-            )
+            ).values(is_read=True, read_at=now).returning(Message.id)
         )
-        messages = result.scalars().all()
-        now = datetime.now(timezone.utc)
-        for msg in messages:
-            msg.is_read = True
-            msg.read_at = now
-        await self.db.flush()
-        return len(messages)
+        return len(result.scalars().all())
 
     async def count_unread(self, match_id: int, user_id: int) -> int:
         result = await self.db.execute(
-            select(Message).where(
+            select(func.count())
+            .select_from(Message)
+            .where(
                 Message.match_id == match_id,
                 Message.sender_id != user_id,
-                Message.is_read == False,  # noqa: E712
+                Message.is_read == False,
             )
         )
-        return len(result.scalars().all())
+        return result.scalar_one()
