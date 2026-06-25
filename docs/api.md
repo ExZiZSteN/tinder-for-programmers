@@ -11,25 +11,48 @@ Production:  https://api.example.com
 
 ##  Аутентификация
 
-Все endpoints (кроме `/auth/*`) требуют JWT-токен в заголовке:
+**Публичные endpoints** (без токена): `GET /api/projects`, `GET /api/projects/{id}`  
+**Остальные endpoints** требуют JWT-токен в заголовке:
 
 ```
 Authorization: Bearer <access_token>
 ```
 
-### Получение токена
+### Регистрация
 
 ```http
-POST /auth/login
+POST /api/auth/register
 Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "password"
+  "password": "password123",
+  "full_name": "John Doe"
 }
 ```
 
-**Response:**
+**Response** `201 Created`:
+```json
+{
+  "access_token": "eyJhbGc...",
+  "refresh_token": "abc123...",
+  "token_type": "bearer"
+}
+```
+
+### Логин
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response** `200 OK`:
 ```json
 {
   "access_token": "eyJhbGc...",
@@ -41,13 +64,35 @@ Content-Type: application/json
 ### Обновление токена
 
 ```http
-POST /auth/refresh
+POST /api/auth/refresh
 Content-Type: application/json
 
 {
   "refresh_token": "abc123..."
 }
 ```
+
+**Response** `200 OK`:
+```json
+{
+  "access_token": "eyJhbGc...",
+  "refresh_token": "def456...",
+  "token_type": "bearer"
+}
+```
+
+### Выход (logout)
+
+```http
+POST /api/auth/logout
+Content-Type: application/json
+
+{
+  "refresh_token": "abc123..."
+}
+```
+
+**Response:** `204 No Content`
 
 ##  REST Endpoints
 
@@ -64,20 +109,230 @@ Content-Type: application/json
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/users/me` | Текущий пользователь |
-| PATCH | `/users/me` | Обновить профиль |
-| PUT | `/users/me/skills` | Обновить навыки |
-| GET | `/users/{id}` | Публичный профиль пользователя |
+| GET | `/users/me` | Текущий пользователь (auth) |
+| PATCH | `/users/me` | Обновить профиль (auth) |
+| PUT | `/users/me/skills` | Обновить навыки (auth) |
+| GET | `/users/{id}` | Публичный профиль (auth) |
+
+#### GET /users/me — мой профиль
+
+```
+GET /api/users/me
+Authorization: Bearer <token>
+```
+
+**Response** `200 OK`:
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "bio": "Python developer",
+  "github_url": "https://github.com/john",
+  "linkedin_url": "https://linkedin.com/in/john",
+  "portfolio_url": null,
+  "experience_years": 5,
+  "avatar_file_id": null,
+  "resume_file_id": null,
+  "user_role": "user",
+  "is_active": true,
+  "last_login_at": null,
+  "created_at": "2026-06-25T14:01:51Z",
+  "updated_at": "2026-06-25T14:34:34Z",
+  "skills": [
+    {"id": 1, "name": "Python"},
+    {"id": 2, "name": "FastAPI"}
+  ]
+}
+```
+
+#### PATCH /users/me — обновить профиль
+
+```
+PATCH /api/users/me
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Все поля опциональны — можно отправить только те, что меняются:
+
+```json
+{
+  "full_name": "John Updated",
+  "bio": "Full-stack developer",
+  "github_url": "https://github.com/john",
+  "linkedin_url": "https://linkedin.com/in/john",
+  "portfolio_url": "https://john.dev",
+  "experience_years": 7
+}
+```
+
+**Response** `200 OK` — полный `UserResponse` (как в GET /users/me)
+
+#### PUT /users/me/skills — обновить навыки
+
+```
+PUT /api/users/me/skills
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Передаётся **полный** список ID навыков — старые удаляются, новые добавляются:
+
+```json
+{
+  "skill_ids": [1, 2, 3]
+}
+```
+
+**Response** `200 OK` — полный `UserResponse` с обновлённым `skills`
+
+#### GET /users/{id} — публичный профиль
+
+```
+GET /api/users/1
+Authorization: Bearer <token>
+```
+
+Публичный профиль — без полей `id`, `user_role`, `created_at`, `updated_at`:
+
+```json
+{
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "bio": "Python developer",
+  "github_url": "https://github.com/john",
+  "linkedin_url": null,
+  "portfolio_url": null,
+  "experience_years": 5,
+  "avatar_file_id": null,
+  "resume_file_id": null,
+  "is_active": true,
+  "last_login_at": null,
+  "skills": [
+    {"id": 1, "name": "Python"}
+  ]
+}
+```
 
 ### Projects
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/projects` | Список проектов (пагинация) |
-| POST | `/projects` | Создать проект |
-| GET | `/projects/{id}` | Детали проекта |
-| PATCH | `/projects/{id}` | Обновить проект |
-| DELETE | `/projects/{id}` | Удалить проект |
+| GET | `/projects` | Список проектов (пагинация, public) |
+| POST | `/projects` | Создать проект (auth) |
+| GET | `/projects/{id}` | Детали проекта (public) |
+| PATCH | `/projects/{id}` | Обновить проект (auth, только owner) |
+| DELETE | `/projects/{id}` | Удалить проект (auth, только owner) |
+
+#### GET /projects — список проектов
+
+```
+GET /api/projects?offset=0&limit=20
+```
+
+Публичный список. `offset` (≥0, по умолч. 0) и `limit` (1–100, по умолч. 20) опциональны.
+
+**Response** `200 OK`:
+```json
+[
+  {
+    "id": 1,
+    "owner_id": 1,
+    "title": "AI Chat Bot",
+    "description": "Building a chat bot",
+    "format": "remote",
+    "payment_type": "volunteer",
+    "status": "open",
+    "created_at": "2026-06-25T14:49:39Z",
+    "updated_at": "2026-06-25T14:49:48Z",
+    "skills": [
+      {"id": 1, "name": "Python"}
+    ],
+    "members": [
+      {"user_id": 1, "role": "owner", "joined_at": "2026-06-25T14:49:39Z", "is_active": true}
+    ]
+  }
+]
+```
+
+#### POST /projects — создать проект
+
+```
+POST /api/projects
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+| Поле | Тип | Обязательное | Допустимые значения |
+|------|-----|:---:|---------------------|
+| `title` | string | да | 1–200 символов |
+| `description` | string | да | 1–5000 символов |
+| `format` | string | нет | `remote` (по умолч.), `office`, `hybrid` |
+| `payment_type` | string | нет | `volunteer` (по умолч.), `paid`, `equity` |
+| `skill_ids` | int[] | нет | ID существующих навыков |
+
+```json
+{
+  "title": "AI Chat Bot",
+  "description": "Building a chat bot with RAG",
+  "format": "remote",
+  "payment_type": "volunteer",
+  "skill_ids": [1, 2, 3]
+}
+```
+
+**Response** `201 Created` — полный `ProjectResponse` (owner автоматически добавлен в `members` с ролью `owner`)
+
+#### GET /projects/{id} — детали проекта
+
+```
+GET /api/projects/1
+```
+
+Публичный доступ. Возвращает полный проект со скиллами и участниками.
+
+**Response** `200 OK` — `ProjectResponse` (тот же формат, что в списке)
+
+#### PATCH /projects/{id} — обновить проект
+
+```
+PATCH /api/projects/1
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Только владелец (owner) может обновлять. Все поля опциональны.
+
+| Поле | Тип | Допустимые значения |
+|------|-----|---------------------|
+| `title` | string | 1–200 символов |
+| `description` | string | 1–5000 символов |
+| `format` | string | `remote`, `office`, `hybrid` |
+| `payment_type` | string | `volunteer`, `paid`, `equity` |
+| `status` | string | `draft`, `open`, `closed`, `archived` |
+| `skill_ids` | int[] | полный список — заменяет текущие навыки |
+
+```json
+{
+  "title": "AI Chat Bot v2",
+  "status": "open",
+  "skill_ids": [1, 2]
+}
+```
+
+**Response** `200 OK` — обновлённый `ProjectResponse`
+
+#### DELETE /projects/{id} — удалить проект
+
+```
+DELETE /api/projects/1
+Authorization: Bearer <token>
+```
+
+Только владелец (owner). Проект и все связанные записи (участники, навыки) удаляются.
+
+**Response:** `204 No Content`
 
 ### Feed & Swipes
 
@@ -198,40 +453,62 @@ ws://localhost:8000/ws/notifications?token=<jwt>
 
 ##  Примеры
 
-### Создать проект
+### Регистрация и профиль
 
 ```bash
-curl -X POST http://localhost:8000/projects \
-  -H "Authorization: Bearer <token>" \
+# 1. Регистрация
+curl -s -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"dev@test.com","password":"pass123","full_name":"Dev User"}'
+
+# 2. Сохранить токен
+TOKEN="<access_token из ответа>"
+
+# 3. Получить свой профиль
+curl -s http://localhost:8000/api/users/me \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Обновить профиль
+curl -s -X PATCH http://localhost:8000/api/users/me \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"bio":"Python dev","github_url":"https://github.com/dev","experience_years":3}'
+
+# 5. Добавить навыки
+curl -s -X PUT http://localhost:8000/api/users/me/skills \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"skill_ids":[1,2,3]}'
+```
+
+### Проекты
+
+```bash
+# 1. Создать проект
+curl -s -X POST http://localhost:8000/api/projects \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "AI Chat Bot",
-    "description": "Building an AI chat bot with RAG",
-    "requirements": ["Python", "LLM experience"],
-    "tech_stack": ["FastAPI", "PostgreSQL", "Redis"],
+    "description": "Building a chat bot with RAG",
     "format": "remote",
-    "payment_type": "paid"
+    "payment_type": "volunteer",
+    "skill_ids": [1, 2]
   }'
-```
 
-### Получить ленту рекомендаций
+# 2. Список проектов
+curl -s http://localhost:8000/api/projects?offset=0&limit=10
 
-```bash
-curl http://localhost:8000/feed \
-  -H "Authorization: Bearer <token>"
-```
+# 3. Детали проекта
+curl -s http://localhost:8000/api/projects/1
 
-**Response:**
-```json
-{
-  "data": [
-    {
-      "id": 42,
-      "title": "AI Chat Bot",
-      "description": "...",
-      "tech_stack": ["FastAPI", "PostgreSQL"],
-      "score": 0.87
-    }
-  ]
-}
+# 4. Обновить проект (только owner)
+curl -s -X PATCH http://localhost:8000/api/projects/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"New Title","status":"open"}'
+
+# 5. Удалить проект (только owner)
+curl -s -X DELETE http://localhost:8000/api/projects/1 \
+  -H "Authorization: Bearer $TOKEN"
 ```
