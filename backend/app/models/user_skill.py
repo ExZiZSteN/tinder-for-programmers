@@ -31,5 +31,5 @@ class UserSkill(Base):
     )
     skill: Mapped["Skill"] = relationship(
         back_populates="user_skills",
-        lazy="joined",
+        lazy="selectin",
     )

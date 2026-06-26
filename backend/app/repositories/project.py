@@ -10,6 +10,25 @@ class ProjectRepository(BaseRepository[Project]):
     def __init__(self, db: AsyncSession):
         super().__init__(Project, db)
     
+    async def get_by_id(self, project_id: int) -> Project | None:
+        result = await self.db.execute(
+            select(Project).where(Project.id == project_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def list_all(self, *, offset: int = 0, limit: int = 20) -> Sequence[Project]:
+        result = await self.db.execute(
+            select(Project)
+            .options(
+                selectinload(Project.owner),
+                selectinload(Project.project_skills),
+            )
+            .order_by(Project.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
     async def get_by_owner(self, owner_id, *, limit: int = 50, offset: int = 0) -> Sequence[Project]:
         result = await self.db.execute(
             select(Project).where(Project.owner_id == owner_id).limit(limit).offset(offset)
