@@ -39,7 +39,7 @@ class ProjectService:
             await self._sync_skills(project, data.skill_ids)
 
         await self.db.commit()
-        await self.db.refresh(project)
+        project = await self.repo.get_by_id(project.id)
         return ProjectResponse.model_validate(project)
 
     async def get_by_id(self, project_id: int) -> ProjectResponse:
@@ -62,7 +62,8 @@ class ProjectService:
         if data.skill_ids is not None:
             await self._sync_skills(project, data.skill_ids)
 
-        await self.db.refresh(project)
+        await self.db.commit()
+        project = await self.repo.get_by_id(project.id)
         return ProjectResponse.model_validate(project)
 
     async def delete(self, user: User, project_id: int) -> None:
@@ -88,6 +89,15 @@ class ProjectService:
         return [ProjectResponse.model_validate(p) for p in projects]
 
     async def _sync_skills(self, project: Project, skill_ids: list[int]) -> None:
+        if not hasattr(project, '_sa_instance_state') or 'project_skills' not in project.__dict__:
+            from sqlalchemy.orm import selectinload
+            from sqlalchemy import select
+            result = await self.db.execute(
+                select(Project)
+                .options(selectinload(Project.project_skills))
+                .where(Project.id == project.id)
+            )
+            project = result.scalar_one()
         existing_ids = {ps.skill_id for ps in project.project_skills}
         new_ids = set(skill_ids)
 

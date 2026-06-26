@@ -7,6 +7,8 @@ from app.models.match import Match
 from app.repositories.base import BaseRepository
 from app.models.project import Project
 from app.models.match import MatchStatus
+
+
 class MatchRepository(BaseRepository[Match]):
     def __init__(self, db: AsyncSession):
         super().__init__(Match, db)
@@ -22,12 +24,27 @@ class MatchRepository(BaseRepository[Match]):
         )
         return result.scalar_one_or_none()
 
+    async def get_active_by_project_and_user(
+        self, *, project_id: int, user_id: int
+    ) -> Match | None:
+        result = await self.db.execute(
+            select(Match).where(
+                Match.project_id == project_id,
+                Match.user_id == user_id,
+                Match.status == MatchStatus.ACTIVE,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_user(self, user_id: int) -> Sequence[Match]:
+        return await self.get_active_by_user(user_id)
+
     async def get_active_by_user(self, user_id: int) -> Sequence[Match]:
         result = await self.db.execute(
             select(Match)
             .where(
                 Match.user_id == user_id,
-                Match.status == "active",
+                Match.status == MatchStatus.ACTIVE,
             )
             .order_by(Match.created_at.desc())
         )
@@ -50,6 +67,9 @@ class MatchRepository(BaseRepository[Match]):
             .where(Match.id == match_id)
         )
         return result.scalar_one_or_none()
+
+    async def get_by_id(self, match_id: int) -> Match | None:
+        return await self.get_with_project(match_id)
 
     async def is_participant(self, match_id: int, user_id: int) -> bool:
         result = await self.db.execute(

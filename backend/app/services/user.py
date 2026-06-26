@@ -31,13 +31,17 @@ class UserService:
         return UserResponse.model_validate(updated)
 
     async def get_user_by_id(self, user_id: int) -> PublicUserResponse:
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_with_skills(user_id)
         if not user:
             raise NotFoundException("User")
         return PublicUserResponse.model_validate(user)
 
     async def update_skills(self, user: User, skill_ids: list[int]) -> UserResponse:
-        existing_ids = {us.skill_id for us in user.user_skills}
+        user_with_skills = await self.user_repo.get_with_skills(user.id)
+        if not user_with_skills:
+            raise NotFoundException("User")
+
+        existing_ids = {us.skill_id for us in user_with_skills.user_skills}
         new_ids = set(skill_ids)
 
         to_remove = existing_ids - new_ids

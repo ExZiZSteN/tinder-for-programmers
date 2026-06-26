@@ -38,16 +38,6 @@ class NotificationService:
         )
 
     async def mark_read(self, user: User, notification_id: int) -> NotificationResponse:
-        result = await self.db.execute(
-            select(Notification).where(
-                Notification.id == notification_id,
-                Notification.user_id == user.id,
-            )
-        )
-        notification = result.scalar_one_or_none()
-        if not notification:
-            raise NotFoundException("Notification")
-
         notification = self.notif_repo.mark_read(notification_id, user.id)
         if not notification:
             raise NotFoundException("Notification")

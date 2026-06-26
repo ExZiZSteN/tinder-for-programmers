@@ -2,18 +2,8 @@ from datetime import datetime
 from typing import Optional
 from enum import Enum
 from pydantic import BaseModel, Field
-
-class ProjectStatus(str, Enum):
-    DRAFT = "draft"
-    OPEN = "open"
-    CLOSED = "closed"
-    ARCHIVED = "archived"
-class SkillResponse(BaseModel):
-    id: int
-    name: str
-
-    model_config = {"from_attributes": True}
-
+from app.schemas.skill import SkillResponse
+from app.models.project import ProjectStatus
 
 class ProjectMemberResponse(BaseModel):
     user_id: int

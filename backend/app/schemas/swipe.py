@@ -1,13 +1,8 @@
 from datetime import datetime
 from typing import Optional
-from enum import Enum
 from pydantic import BaseModel, Field
+from app.models.swipe import SwipeStatus
 
-class SwipeStatus(str, Enum):
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    PENDING = "pending"
-    WITHDRAWN = "withdrawn"
 class SwipeResponse(BaseModel):
     id: int
     user_id: int
