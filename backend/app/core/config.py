@@ -33,11 +33,13 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ENDPOINT: str = "minio:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET: str = "uploads"
     MINIO_USE_SSL: bool = False
+    MINIO_EXTERNAL_ENDPOINT: str = "localhost:9000"
+
 
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
     EMBEDDING_DIM: int = 384
@@ -69,12 +71,5 @@ class Settings(BaseSettings):
             return [s.strip() for s in v.split(",") if s.strip()]
         return v
 
-
-    MINIO_ENDPOINT: str = "minio:9000"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_BUCKET: str = "uploads"
-    MINIO_USE_SSL: bool = False
-    MINIO_EXTERNAL_ENDPOINT: str = "localhost:9000"
 
 settings = Settings()
