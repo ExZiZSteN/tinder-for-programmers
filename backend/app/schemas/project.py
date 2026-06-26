@@ -35,6 +35,10 @@ class ProjectCreateRequest(BaseModel):
     description: str = Field(..., min_length=1, max_length=5000)
     format: str = Field(default="remote", pattern=r"^(remote|office|hybrid)$")
     payment_type: str = Field(default="volunteer", pattern=r"^(volunteer|paid|equity)$")
+    status: ProjectStatus = Field(
+        default=ProjectStatus.OPEN,
+        description="Статус проекта: draft/open/closed/archived"
+    )
     skill_ids: list[int] = []
 
 
