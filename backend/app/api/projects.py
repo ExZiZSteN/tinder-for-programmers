@@ -18,9 +18,42 @@ async def list_projects(
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    status: str | None = Query(
+        None,
+        description="Фильтр по статутсу: draft/open/closed/archived. По умолчанию - open"
+    ),
+    format: str | None = Query(
+        None,
+        description="Фильтр по формату: remote/office/hybrid"
+    ),
+    payment_type: str | None = Query(
+        None,
+        description="Фильтр по типу оплаты: volunteer/paid/equity",
+    ),
+    skill_ids: list[int] | None = Query(
+        None,
+        description="Фильтр по навыкам (ID). Проект должен иметь хотя бы один из указанных навыков",
+    ),
 ):
     service = ProjectService(db)
-    return await service.list_projects(offset=offset, limit=limit)
+    return await service.list_projects(
+        offset=offset, 
+        limit=limit,
+        status=status,
+        format=format,
+        payment_type=payment_type,
+        skill_ids=skill_ids,
+    )
+
+@router.get("/my", response_model=list[ProjectResponse])
+async def my_project(
+    offest: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    service = ProjectService(db)
+    return await service.get_my_projects(user,offset=offest,limit=limit)
 
 
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)

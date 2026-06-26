@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -25,30 +25,32 @@ def create_access_token(subject: int | str, expires_delta: timedelta | None = No
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_refresh_token(subject: int | str) -> tuple[str, str]:
+def create_refresh_token(subject: int | str) -> tuple[str, UUID]:
     """Возвращает (token, family_id)"""
     expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
-    family_id = str(uuid4())
+    family_id = uuid4()
     to_encode = {
         "sub": str(subject),
         "exp": expire,
         "type": "refresh",
-        "family_id": family_id,
+        "family_id": str(family_id),
+        "jti": str(uuid4()),
     }
     token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return token, family_id
 
 def create_refresh_token_with_family(
     subject: int | str,
-    family_id: str,
-) -> tuple[str, str]:
+    family_id: UUID,
+) -> tuple[str, UUID]:
     """Создать refresh token с ЗАДАННЫМ family_id (для ротации)."""
     expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {
         "sub": str(subject),
         "exp": expire,
         "type": "refresh",
-        "family_id": family_id,
+        "family_id": str(family_id),
+        "jit": str(uuid4()),
     }
     token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return token, family_id

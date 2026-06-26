@@ -1,5 +1,6 @@
 import json
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.core.database import async_session
 from app.core.security import decode_token
 from app.core.ws_manager import ws_manager
@@ -36,21 +37,24 @@ async def handle_chat_ws(websocket, match_id: int):
     user_id = int(payload["sub"])
 
     async with async_session() as db:
-        result = await db.execute(select(Match).where(Match.id == match_id))
+        result = await db.execute(
+            select(Match).options(
+                selectinload(Match.project)
+                ).where(Match.id == match_id)
+            )
         match = result.scalar_one_or_none()
-        match = await self.match_repo.get_with_project(match_id)
         if not match:
-            await websocket.close(code=4004)
+            await websocket.close(code=WS_CLOSE_NOT_FOUND)
             return
 
         result = await db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if not user or not user.is_active or user.is_banned:
-            await websocket.close(code=4001)
+            await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
             return
 
         if match.user_id != user_id and match.project.owner_id != user_id:
-            await websocket.close(code=4003)
+            await websocket.close(code=WS_CLOSE_FORBIDDEN)
             return
 
         service = ChatService(db)

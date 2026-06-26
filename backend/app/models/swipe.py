@@ -1,3 +1,5 @@
+from enum import Enum
+from sqlalchemy import Enum as SQLEnum
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, UniqueConstraint, func, Index
@@ -7,6 +9,11 @@ if TYPE_CHECKING:
     from app.models.project import Project
     from app.models.user import User
 
+class SwipeStatus(str, Enum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PENDING = "pending"
+    WITHDRAWN = "withdrawn"
 class Swipe(Base):
     __tablename__ = "swipes"
 
@@ -18,7 +25,11 @@ class Swipe(Base):
         BigInteger, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    status: Mapped[SwipeStatus] = mapped_column(
+        SQLEnum(SwipeStatus, name="swipe_status"), 
+        nullable=False, 
+        default=SwipeStatus.PENDING
+        )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

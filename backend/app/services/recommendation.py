@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.project import Project
@@ -20,6 +21,10 @@ class RecommendationService:
 
         result = await self.db.execute(
             select(Project)
+            .options(
+                selectinload(Project.owner),
+                selectinload(Project.project_skills),
+            )
             .where(
                 Project.owner_id != user.id,
                 Project.id.notin_(swiped_subquery),

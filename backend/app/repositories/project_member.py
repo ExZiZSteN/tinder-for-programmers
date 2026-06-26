@@ -1,9 +1,10 @@
 from typing import Sequence
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.project_member import ProjectMember
 from app.repositories.base import BaseRepository
-
+from app.models.project import Project
 
 class ProjectMemberRepository(BaseRepository[ProjectMember]):
     def __init__(self, db: AsyncSession):
@@ -43,5 +44,21 @@ class ProjectMemberRepository(BaseRepository[ProjectMember]):
                 ProjectMember.user_id == user_id,
                 ProjectMember.is_active == True,  # noqa: E712
             )
+        )
+        return result.scalars().all()
+
+    async def get_by_ids(self, ids: list[int]) -> Sequence[Project]:
+        if not ids:
+            return []
+
+        result = await self.db.execute(
+            select(Project)
+            .options(
+                selectinload(Project.owner),
+                selectinload(Project.project_skills),
+                selectinload(Project.members),
+            )
+            .where(Project.id.in_(ids))
+            .order_by(Project.created_at.desc())
         )
         return result.scalars().all()

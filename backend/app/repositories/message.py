@@ -25,6 +25,19 @@ class MessageRepository(BaseRepository[Message]):
         result = await self.db.execute(query)
         return result.scalars().all()
 
+    async def get_by_match(self, match_id: int, offset: int = 0, limit: int = 50) -> Sequence[Message]:
+        result = await self.db.execute(
+            select(Message)
+            .where(Message.match_id == match_id)
+            .order_by(Message.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    async def create_message(self, match_id: int, sender_id: int, content: str) -> Message:
+        return await self.create(match_id=match_id, sender_id=sender_id, content=content)
+
     async def mark_read(self, match_id: int, user_id: int) -> int:
         from datetime import datetime, timezone
         now = datetime.now(timezone.utc)

@@ -2,13 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
-
-
-class SkillResponse(BaseModel):
-    id: int
-    name: str
-
-    model_config = {"from_attributes": True}
+from app.schemas.skill import SkillResponse
 
 
 class UserResponse(BaseModel):

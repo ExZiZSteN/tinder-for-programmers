@@ -221,6 +221,7 @@ Authorization: Bearer <token>
 |-------|------|----------|
 | GET | `/projects` | Список проектов (пагинация, public) |
 | POST | `/projects` | Создать проект (auth) |
+| GET | `/projects/my` | Посмотреть свои проекты |
 | GET | `/projects/{id}` | Детали проекта (public) |
 | PATCH | `/projects/{id}` | Обновить проект (auth, только owner) |
 | DELETE | `/projects/{id}` | Удалить проект (auth, только owner) |
@@ -284,6 +285,16 @@ Content-Type: application/json
 
 **Response** `201 Created` — полный `ProjectResponse` (owner автоматически добавлен в `members` с ролью `owner`)
 
+### GET /projects/my — посмотреть свои проекты
+```
+GET /api/projects/my
+```
+
+Возвращает список проектов пользователя
+
+**Response** `200 OK` - список `ProjectResponse`
+
+
 #### GET /projects/{id} — детали проекта
 
 ```
@@ -333,6 +344,52 @@ Authorization: Bearer <token>
 Только владелец (owner). Проект и все связанные записи (участники, навыки) удаляются.
 
 **Response:** `204 No Content`
+
+### Skills
+
+| Метод | Путь | Описание |
+|-------|------|----------|
+| GET | `/skills` | Список навыков (пагинация, public) |
+| GET | `/skills/popular` | Список наиболее популярных навыков, среди пользователей |
+| POST | `/skils` | Добавление навыка |
+
+#### GET /skills/ — список навыков
+
+```
+GET /api/skills
+```
+
+Получаем список существующих навыков
+
+**Response** `200 OK` - `SkillResponse`
+
+
+#### GET /skills/popular
+
+```
+GET /api/skills/popular
+```
+
+Получаем список наиболее популярных навыков среди пользователей
+
+**Response** `200 OK` - `JSON`
+```Json
+{ 
+  "id" : id, 
+  "name" : name,
+  "count": count
+}
+```
+
+#### POST /skills
+```
+POST /api/skills
+```
+
+Добавление наывка
+
+**Response** `201 OK` - `SkillResposne`
+
 
 ### Feed & Swipes
 

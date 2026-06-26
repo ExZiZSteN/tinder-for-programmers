@@ -2,18 +2,8 @@ from datetime import datetime
 from typing import Optional
 from enum import Enum
 from pydantic import BaseModel, Field
-
-class ProjectStatus(str, Enum):
-    DRAFT = "draft"
-    OPEN = "open"
-    CLOSED = "closed"
-    ARCHIVED = "archived"
-class SkillResponse(BaseModel):
-    id: int
-    name: str
-
-    model_config = {"from_attributes": True}
-
+from app.schemas.skill import SkillResponse
+from app.models.project import ProjectStatus
 
 class ProjectMemberResponse(BaseModel):
     user_id: int
@@ -45,6 +35,10 @@ class ProjectCreateRequest(BaseModel):
     description: str = Field(..., min_length=1, max_length=5000)
     format: str = Field(default="remote", pattern=r"^(remote|office|hybrid)$")
     payment_type: str = Field(default="volunteer", pattern=r"^(volunteer|paid|equity)$")
+    status: ProjectStatus = Field(
+        default=ProjectStatus.OPEN,
+        description="Статус проекта: draft/open/closed/archived"
+    )
     skill_ids: list[int] = []
 
 

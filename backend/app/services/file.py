@@ -34,6 +34,7 @@ class FileService:
         upload_url = get_presigned_upload_url(unique_name, expires_hours=1)
         return FileUploadResponse(
             id=file.id,
+            owner_id=file.owner_id,
             upload_url=upload_url,
             original_name=original_name,
             expires_in=3600,
@@ -70,7 +71,7 @@ class FileService:
         return file_id in (avatar_id, resume_id)
 
     async def get_download(self, user: User, file_id: int) -> FileDownloadResponse:
-        file = await self.repo.get_by_id(file_id)
+        file = await self.repo.get(file_id)
         if not file:
             raise NotFoundException("File")
 
