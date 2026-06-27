@@ -1,12 +1,13 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundException, ConflictException
+from app.core.exceptions import NotFoundException, ConflictException, ForbiddenException
 from app.models.skill import Skill
 from app.models.user import User
 from app.models.user_skill import UserSkill
 from app.repositories.user import UserRepository
 from app.schemas.user import PublicUserResponse, UserResponse, UserUpdateRequest
+from app.models.file import File
 
 
 class UserService:
@@ -15,7 +16,10 @@ class UserService:
         self.db = db
 
     async def get_profile(self, user: User) -> UserResponse:
-        return UserResponse.model_validate(user)
+        user_with_skills = await self.user_repo.get_with_skills(user.id)
+        if not user_with_skills:
+            raise NotFoundException("User")
+        return UserResponse.model_validate(user_with_skills)
 
     async def update_profile(self, user: User, data: UserUpdateRequest) -> UserResponse:
         updates = data.model_dump(exclude_unset=True)
@@ -69,3 +73,41 @@ class UserService:
         await self.db.commit()
         await self.db.refresh(user)
         return UserResponse.model_validate(user)
+
+
+    async def set_avatar(self, user: User, file_id: int) -> UserResponse:
+        file = await self.db.get(File, file_id)
+        if not file:
+            raise NotFoundException("File")
+        if file.owner_id != user.id:
+            raise ForbiddenException("File does not belong to you")
+    
+        user.avatar_file_id = file_id
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return await self.get_profile(user)
+
+    async def remove_avatar(self, user: User) -> UserResponse:
+        user.avatar_file_id = None
+        await self.db.commit()
+        await self.db.refresh(user)
+        return await self.get_profile(user)
+
+    async def set_resume(self, user: User, file_id: int) -> UserResponse:
+        file = await self.db.get(File, file_id)
+        if not file:
+            raise NotFoundException("File")
+        if file.owner_id != user.id:
+            raise ForbiddenException("File does not belong to you")
+        user.resume_file_id = file_id
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return await self.get_profile(user)
+    
+    async def remove_resume(self, user: User) -> UserResponse:
+        user.resume_file_id = None
+        await self.db.commit()
+        await self.db.refresh(user)
+        return await self.get_profile(user)

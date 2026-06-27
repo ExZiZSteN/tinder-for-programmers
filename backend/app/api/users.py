@@ -51,3 +51,37 @@ async def get_user(
 ):
     service = UserService(db)
     return await service.get_user_by_id(user_id)
+
+@router.post("/me/avatar", response_model=UserResponse)
+async def set_avatar(
+    file_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = UserService(db)
+    return await service.set_avatar(user, file_id)
+
+@router.delete("/me/avatar", response_model=UserResponse)
+async def delete_avatar(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = UserService(db)
+    return await service.remove_avatar(user)
+
+@router.post("/me/resume", response_model=UserResponse)
+async def set_resume(
+    file_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = UserService(db)
+    return await service.set_resume(user, file_id)
+
+@router.delete("/me/resume", response_model=UserResponse)
+async def delete_resume(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = UserService(db)
+    return await service.remove_resume(user)

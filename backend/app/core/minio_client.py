@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from minio import Minio
-
+# from io import BytesIO
 from app.core.config import settings
 
 _REGION = "us-east-1"
@@ -42,3 +42,33 @@ def get_presigned_download_url(object_name: str, expires_hours: int = 24) -> str
         object_name,
         expires=timedelta(hours=expires_hours),
     )
+
+# def upload_file_from_bytes(
+#         object_name: str,
+#         data: bytes,
+#         content_type: str = "/application/octet-stream",
+# ) -> bool:
+#     try:
+#         file_data = BytesIO(data)
+#         _internal.put_object(
+#             bucket_name=settings.MINIO_BUCKET,
+#             object_name=object_name,
+#             data=file_data,
+#             length=len(data),
+#             content_type=content_type,
+#         )
+#         return True
+#     except Exception as e:
+#         print(f"Error when uploading file to MinIO: {e}")
+#         return False
+
+# def delete_file(object_name: str) -> bool:
+#     try:
+#         _internal.remove_bucket(
+#             bucket_name=settings.MINIO_BUCKET,
+#             object_name=object_name,
+#         )
+#         return True
+#     except Exception as e:
+#         print(f"Error when deleating file from MinIO: {e}")
+#         return False
