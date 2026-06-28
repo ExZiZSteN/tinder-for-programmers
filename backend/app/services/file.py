@@ -1,9 +1,9 @@
 import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-# from fastapi import UploadFile
+from fastapi import UploadFile
 from app.core.exceptions import ForbiddenException, NotFoundException, BadRequestException
-from app.core.minio_client import get_presigned_download_url, get_presigned_upload_url #, upload_file_from_bytes
+from app.core.minio_client import get_presigned_download_url, get_presigned_upload_url, upload_file_from_bytes
 from app.models.file import File
 from app.models.user import User
 from app.repositories.base import BaseRepository
@@ -70,42 +70,42 @@ class FileService:
         avatar_id, resume_id = row
         return file_id in (avatar_id, resume_id)
 
-    # async def upload_file_direct(
-    #         self,
-    #         user: User,
-    #         file: UploadFile,
-    # ) -> FileUploadResponse:
-    #     content = await file.read()
-    #     size_bytes = len(content)
+    async def upload_file_direct(
+            self,
+            user: User,
+            file: UploadFile,
+    ) -> FileUploadResponse:
+        content = await file.read()
+        size_bytes = len(content)
 
-    #     unique_name = f"{uuid.uuid4().hex}_{file.filename}"
+        unique_name = f"{uuid.uuid4().hex}_{file.filename}"
 
-    #     success = upload_file_from_bytes(
-    #         object_name=unique_name,
-    #         data=content,
-    #         content_type=file.content_type or "application/octet-stream",
-    #     )
-    #     if not success:
-    #         raise BadRequestException("Filed to upload file to storage")
+        success = upload_file_from_bytes(
+            object_name=unique_name,
+            data=content,
+            content_type=file.content_type or "application/octet-stream",
+        )
+        if not success:
+            raise BadRequestException("Filed to upload file to storage")
 
-    #     db_file = await self.repo.create(
-    #         owner_id=user.id,
-    #         filename=unique_name,
-    #         original_name=file.filename,
-    #         path=unique_name,
-    #         size_bytes=size_bytes,
-    #         mime_type=file.content_type or "application/octet-stream",
-    #     )
+        db_file = await self.repo.create(
+            owner_id=user.id,
+            filename=unique_name,
+            original_name=file.filename,
+            path=unique_name,
+            size_bytes=size_bytes,
+            mime_type=file.content_type or "application/octet-stream",
+        )
 
-    #     download_url = get_presigned_download_url(unique_name, expires_hours=24)
+        download_url = get_presigned_download_url(unique_name, expires_hours=24)
 
-    #     return FileUploadResponse(
-    #         id=db_file.id,
-    #         owner_id=db_file.owner_id,
-    #         upload_url=download_url,
-    #         original_name=file.filename,
-    #         expires_in=86400,
-    #     )
+        return FileUploadResponse(
+            id=db_file.id,
+            owner_id=db_file.owner_id,
+            upload_url=download_url,
+            original_name=file.filename,
+            expires_in=86400,
+        )
 
     async def get_download(self, user: User, file_id: int) -> FileDownloadResponse:
         file = await self.repo.get(file_id)

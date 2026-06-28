@@ -2,7 +2,7 @@ from typing import Sequence
 from sqlalchemy import select, text, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.models.project import Project
+from app.models.project import Project, ProjectStatus
 from app.repositories.base import BaseRepository
 from app.models.project_skill import ProjectSkill
 from app.models.project_member import ProjectMember
@@ -37,7 +37,9 @@ class ProjectRepository(BaseRepository[Project]):
             )
         )
 
-        if status:
+        if status is None:
+            query = query.where(Project.status != ProjectStatus.ARCHIVED)
+        else:
             query = query.where(Project.status == status)
         if format:
             query = query.where(Project.format == format)
