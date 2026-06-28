@@ -7,7 +7,8 @@ export interface Project {
   payment_type: 'volunteer' | 'paid' | 'equity'
   status: 'draft' | 'open' | 'closed' | 'completed' | 'archived'
   skills: Skill[]
-  owner: ProjectOwner
+  members?: ProjectMember[]
+  owner?: ProjectOwner
   score?: number
   created_at: string
   updated_at: string
@@ -19,6 +20,12 @@ export interface ProjectOwner {
   avatar_url?: string
 }
 
+export interface ProjectMember {
+  id: number
+  role: string
+  joined_at?: string
+  is_active: boolean
+}
 export interface Skill {
   id: number
   name: string
@@ -30,6 +37,7 @@ export interface ProjectCreate {
   format: 'remote' | 'office' | 'hybrid'
   payment_type: 'volunteer' | 'paid' | 'equity'
   skill_ids: number[]
+  status?: 'draft' | 'open' | 'closed' | 'archived'
 }
 
 export interface ProjectUpdate {

@@ -5,6 +5,12 @@ from pydantic import BaseModel, Field
 from app.schemas.skill import SkillResponse
 from app.models.project import ProjectStatus
 
+class ProjectOwnerResponse(BaseModel):
+    id: int
+    full_name: str
+    avatar_file_id: Optional[int] = None
+    
+    model_config = {"from_attributes": True}
 class ProjectMemberResponse(BaseModel):
     user_id: int
     role: str
@@ -26,7 +32,7 @@ class ProjectResponse(BaseModel):
     updated_at: Optional[datetime] = None
     skills: list[SkillResponse] = []
     members: list[ProjectMemberResponse] = []
-
+    owner: Optional[ProjectOwnerResponse]
     model_config = {"from_attributes": True}
 
 
