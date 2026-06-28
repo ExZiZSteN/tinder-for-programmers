@@ -21,7 +21,10 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: LoginFormData, e?: React.BaseSyntheticEvent) => {
+    e?.preventDefault() // Явно предотвращаем reload формы
+    console.log('🔐 Попытка входа:', data.email)
+    
     try {
       // 1. Логинимся
       const { access_token, refresh_token } = await authApi.login({
@@ -29,16 +32,28 @@ export default function LoginPage() {
         password: data.password,
       })
 
+      setAuth(
+        {
+          id: 0,
+          email: data.email,
+          full_name: '',
+          skills: [],
+          user_role: 'user',
+          is_active: true,
+          created_at: '',
+        },
+        access_token,
+        refresh_token
+      )
       // 2. Получаем данные пользователя
       const user = await authApi.getMe()
-
       // 3. Сохраняем в store
       setAuth(user, access_token, refresh_token)
 
       toast.success('Добро пожаловать!')
-      navigate('/feed')
+      navigate('/feed', { replace: true })
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Ошибка входа'
+      const message = error.response?.data?.detail || error.message || 'Ошибка входа'
       toast.error(message)
     }
   }

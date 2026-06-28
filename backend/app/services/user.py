@@ -74,7 +74,6 @@ class UserService:
         await self.db.refresh(user)
         return UserResponse.model_validate(user)
 
-
     async def set_avatar(self, user: User, file_id: int) -> UserResponse:
         file = await self.db.get(File, file_id)
         if not file:

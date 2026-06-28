@@ -2,8 +2,9 @@ import axios from 'axios'
 
 import { useAuthStore } from '@/stores/authStore'
 
+console.log('🔍 VITE_API_URL =', import.meta.env.VITE_API_URL)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-
+console.log('🔍 Итоговый baseURL =', API_URL)
 export const apiClient = axios.create({
     baseURL: API_URL,
     headers: {

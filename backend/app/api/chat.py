@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
-from app.schemas.message import MessageResponse
+from app.schemas.message import MessageResponse, MessageCreateRequest
 from app.services.chat import ChatService
 
 router = APIRouter()
@@ -19,3 +19,13 @@ async def get_chat_history(
 ):
     service = ChatService(db)
     return await service.get_history(user, match_id, offset=offset, limit=limit)
+
+@router.post("/{match_id}/messages", response_class=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def send_message(
+    match_id: int,
+    body: MessageCreateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = ChatService(db)
+    return await service.send_message(user, match_id, body)
