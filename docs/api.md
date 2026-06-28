@@ -113,6 +113,10 @@ Content-Type: application/json
 | PATCH | `/users/me` | Обновить профиль (auth) |
 | PUT | `/users/me/skills` | Обновить навыки (auth) |
 | GET | `/users/{id}` | Публичный профиль (auth) |
+| POST | `/users/avatar` | Загрузка аватара пользователя (auth) |
+| DELETE | `/users/avatar` | Удаление аватара пользователя (auth) |
+| POST | `/users/resume` | Загрузка резюме пользователя (auth) |
+| DELETE | `/users/resume` | Удаление резюме пользователя (auth) | 
 
 #### GET /users/me — мой профиль
 
@@ -225,6 +229,7 @@ Authorization: Bearer <token>
 | GET | `/projects/{id}` | Детали проекта (public) |
 | PATCH | `/projects/{id}` | Обновить проект (auth, только owner) |
 | DELETE | `/projects/{id}` | Удалить проект (auth, только owner) |
+| POST | `/projects/{id}/restore` | Востановить проект (auth, только owner) |
 
 #### GET /projects — список проектов
 
@@ -758,6 +763,7 @@ Push-уведомления в реальном времени. Уведомле
 |-------|------|----------|
 | POST | `/files/upload` | Получить presigned URL для загрузки (auth) |
 | GET | `/files/{id}` | Получить presigned URL для скачивания (auth) |
+| POST | `/files/upload-direct` | Загрузка файла сразу на сервер (auth) |
 
 Файлы загружаются напрямую в MinIO (S3-совместимое хранилище) через presigned URL. Сервер выдаёт временную ссылку, по которой клиент делает PUT запрос с телом файла.
 
@@ -823,6 +829,12 @@ Authorization: Bearer <token>
 Ошибки:
 - `403` — файл не принадлежит текущему пользователю
 - `404` — файл не найден
+
+#### POST /files/upload-direct — загрузка файла сразу на сервер
+```
+POST /api/files/upload-direct
+Authorization: Bearer <token>
+```
 
 ## 🔌 WebSocket Endpoints
 

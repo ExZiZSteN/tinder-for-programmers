@@ -94,3 +94,12 @@ async def delete_project(
 ):
     service = ProjectService(db)
     await service.delete(user, project_id)
+
+@router.post("/{project_id}/restore", response_model=ProjectResponse)
+async def resotre_project(
+    project_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    service = ProjectService(db)
+    return await service.restore(user, project_id)

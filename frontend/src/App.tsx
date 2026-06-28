@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { AppLayout } from './components/layout/AppLayout'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ProfilePage from './pages/ProfilePage'
 
 // Pages (заглушки)
 const FeedPage = () => <div>Feed Page</div>
 const MatchesPage = () => <div>Matches Page</div>
-const ProfilePage = () => <div>Profile Page</div>
+const ProjectsPage = () => <div>Projects Page</div>
 
 // Protected Route
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -16,7 +18,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />
   }
   
-  return <>{children}</>
+  return <AppLayout>{children}</AppLayout>
 }
 
 function App() {
@@ -52,7 +54,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          }
+        />
         {/* Redirect */}
         <Route path="/" element={<Navigate to="/feed" replace />} />
         <Route path="*" element={<Navigate to="/feed" replace />} />

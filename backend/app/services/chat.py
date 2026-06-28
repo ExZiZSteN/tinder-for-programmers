@@ -7,7 +7,7 @@ from app.models.message import Message
 from app.models.user import User
 from app.repositories.match import MatchRepository
 from app.repositories.message import MessageRepository
-from app.schemas.message import MessageResponse, WSMessageOut
+from app.schemas.message import MessageResponse, WSMessageOut, MessageCreateRequest
 
 
 class ChatService:
@@ -42,3 +42,25 @@ class ChatService:
             content=msg.content,
             created_at=msg.created_at,
         )
+
+    async def send_message(
+            self, user: User,  match_id : int, data: MessageCreateRequest
+    ) -> Message:
+        
+        match = await self.db.get(Match, match_id)
+        if not match:
+            raise NotFoundException("Match")
+        if match.user_id != user.id and match.project.owner_id != user.id:
+            raise ForbiddenException("You are not part of this match")
+        
+        message = Message(
+            match_id=match_id,
+            sender_id=user.id,
+            contend=data.content,
+        )
+
+        self.db.add(message)
+        await self.db.commit()
+        await self.db.refresh(message)
+        
+        return message

@@ -1,7 +1,7 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.core.exceptions import ForbiddenException, NotFoundException
+from app.core.exceptions import ForbiddenException, NotFoundException, BadRequestException
 from app.models.project import Project, ProjectStatus
 from app.models.project_member import ProjectMember
 from app.models.project_skill import ProjectSkill
@@ -74,16 +74,24 @@ class ProjectService:
         if project.owner_id != user.id:
             raise ForbiddenException("Only the owner can delete the project")
 
-        await self.db.execute(
-            delete(ProjectSkill).where(ProjectSkill.project_id == project.id)
-        )
-        await self.db.execute(
-            delete(ProjectMember).where(ProjectMember.project_id == project.id)
-        )
-        await self.db.execute(
-            delete(Project).where(Project.id == project.id)
-        )
+        project.status = ProjectStatus.ARCHIVED
         await self.db.commit()
+
+    async def restore(self, user: User, project_id: int) -> ProjectResponse:
+        project = await self.repo.get_by_id(project_id)
+        if not project:
+            raise NotFoundException("Project")
+        
+        if project.owner_id != user.id:
+            raise ForbiddenException("You can only retore your own projects")
+
+        if project.status != ProjectStatus.ARCHIVED:
+            raise BadRequestException("Project is not archived")
+        
+        project.status = ProjectStatus.OPEN
+        await self.db.commit()
+        await self.db.refresh(project)
+        return ProjectResponse.model_validate(project)
 
     async def list_projects(
             self, offset: int = 0, 

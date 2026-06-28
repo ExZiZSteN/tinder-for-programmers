@@ -13,7 +13,9 @@ class MessageResponse(BaseModel):
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
-
+    
+class MessageCreateRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=1000)
 
 class WSMessageIn(BaseModel):
     type: str = Field("message", pattern=r"^message$")

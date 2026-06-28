@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { authApi } from '@/api/auth'
+import { useAuthStore } from '@/stores/authStore'
 import { registerSchema, type RegisterFormData } from '@/lib/validations'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
-
+  const setAuth = useAuthStore((state) => state.setAuth)
   const {
     register,
     handleSubmit,
@@ -27,8 +28,31 @@ export default function RegisterPage() {
         full_name: data.full_name,
       })
 
-      toast.success('Регистрация успешна! Войдите в аккаунт.')
-      navigate('/login')
+      toast.success('Регистрация успешна!')
+      //navigate('/login')
+            const { access_token, refresh_token } = await authApi.login({
+        email: data.email,
+        password: data.password,
+      })
+
+      setAuth(
+        {
+          id: 0,
+          email: data.email,
+          full_name: '',
+          skills: [],
+          user_role: 'user',
+          is_active: true,
+          created_at: '',
+        },
+        access_token,
+        refresh_token
+      )
+      // 2. Получаем данные пользователя
+      const user = await authApi.getMe()
+      // 3. Сохраняем в store
+      setAuth(user, access_token, refresh_token)
+      navigate('/feed', { replace: true })
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Ошибка регистрации'
       toast.error(message)

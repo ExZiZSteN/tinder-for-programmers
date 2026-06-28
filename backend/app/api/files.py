@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db
@@ -32,3 +32,12 @@ async def get_file(
 ):
     service = FileService(db)
     return await service.get_download(user, file_id)
+
+@router.post("/upload-direct", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_file_direct(
+    file: UploadFile = File(),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = FileService(db)
+    return await service.upload_file_direct(user, file)
