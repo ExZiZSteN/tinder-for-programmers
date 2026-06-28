@@ -10,7 +10,7 @@ router = APIRouter()
 
 @router.get("", response_model=list[SkillResponse])
 async def list_skills(
-    q: str | None = Query(None, max_length=100, description="Поиск по имени"),
+    q: str | None = Query(None, min_length=1, max_length=100, description="Поиск по имени"),
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),

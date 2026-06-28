@@ -11,9 +11,9 @@ export const filesApi = {
     return response.data
   },
 
-  getDownloadUrl: async (fileId: number): Promise<FileDownloadResponse> => {
+  getDownloadUrl: async (fileId: number): Promise<string> => {
     const response = await apiClient.get(`/files/${fileId}`)
-    return response.data
+    return response.data.download_url
   },
 
 }

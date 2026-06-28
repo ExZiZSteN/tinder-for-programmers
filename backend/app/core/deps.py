@@ -28,7 +28,10 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    payload = decode_token(token, expected_type="access")
+    try:
+        payload = decode_token(token, expected_type="access")
+    except ValueError as e:
+        raise UnauthorizedException(f"Invalid token: {e}") from e
     user_id = int(payload["sub"])
     user_repo = UserRepository(db)
 

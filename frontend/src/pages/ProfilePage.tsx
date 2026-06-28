@@ -12,6 +12,7 @@ import { filesApi } from '@/api/files'
 import { useAuthStore } from '@/stores/authStore'
 import type { User } from '@/types/user'
 import type { Skill } from '@/types/project'
+import { AvatarImage } from '@/components/profile/AvatarImage'
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Имя должно содержать минимум 2 символа').max(150, 'Имя слишком длинное'),
@@ -51,6 +52,9 @@ export default function ProfilePage() {
       const userData = await usersApi.getMe()
       setUser(userData)
       setSkills(userData.skills || [])
+
+      useAuthStore.getState().setUser(userData)
+
       reset({
         full_name: userData.full_name,
         bio: userData.bio || '',
@@ -167,17 +171,10 @@ export default function ProfilePage() {
           <h2 className="text-lg font-semibold mb-4">Аватар</h2>
           <div className="flex items-center gap-4">
             <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-              {user.avatar_file_id ? (
-                <img
-                  src={`http://localhost:9000/uploads/avatar_${user.avatar_file_id}.jpg`}
-                  alt="Avatar"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-3xl font-bold text-muted-foreground">
-                  {user.full_name?.[0]?.toUpperCase() || '?'}
-                </span>
-              )}
+              <AvatarImage
+                fileId={user.avatar_file_id}
+                fallback={user.full_name?.[0]?.toUpperCase() || '?'}
+              />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -323,7 +320,7 @@ function SkillSelector({ selectedSkills, onSkillsChange }: { selectedSkills: Ski
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (searchQuery.length < 2) {
+      if (searchQuery.length < 1) {
         setSearchResults([])
         return
       }

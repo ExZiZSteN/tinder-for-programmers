@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
 } from 'lucide-react'
+import { AvatarImage } from '../profile/AvatarImage'
 
 const navItems = [
   { to: '/feed', label: 'Лента', icon: Heart },
@@ -56,7 +57,7 @@ export function Sidebar() {
           <Menu className="h-5 w-5" />
         </button>
       </div>
-
+      
       <nav className="flex flex-col gap-2 p-4">
         {navItems.map((item) => (
           <NavLink
@@ -79,9 +80,18 @@ export function Sidebar() {
 
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
         {sidebarOpen && user && (
-          <div className="mb-3 px-3">
-            <p className="text-sm font-medium truncate">{user.full_name}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+          <div className="mb-3 flex itmes-center gap-3 rounded-lg bg-sidebar-accent/50  px-3 py-2">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-primary/20">
+              <AvatarImage
+                fileId={user.avatar_file_id}
+                fallback={user.full_name?.[0]?.toUpperCase() || '?'}
+                className='text-sm'
+                />
+              </div>
+              <div className='min-w-0 flex-1 flex flex-col gap-0.5'>
+                <p className="text-sm font-medium truncate">{user.full_name}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
           </div>
         )}
         <button
