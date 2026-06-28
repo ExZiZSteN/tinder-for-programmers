@@ -3,11 +3,11 @@ import { useAuthStore } from '@/stores/authStore'
 import { AppLayout } from './components/layout/AppLayout'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ProfilePage from './pages/ProfilePage'
 
 // Pages (заглушки)
 const FeedPage = () => <div>Feed Page</div>
 const MatchesPage = () => <div>Matches Page</div>
-const ProfilePage = () => <div>Profile Page</div>
 const ProjectsPage = () => <div>Projects Page</div>
 
 // Protected Route
