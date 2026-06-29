@@ -51,7 +51,7 @@ class Project(Base, TimestampMixin):
     )
     owner: Mapped["User"] = relationship(back_populates="owned_projects", lazy="selectin")
     skills: Mapped[list["Skill"]] = relationship(
-        secondary="project_skills", back_populates="projects", lazy="selectin"
+        secondary="project_skills", back_populates="projects", lazy="selectin", overlaps="project_skills",
     )
     members: Mapped[list["ProjectMember"]] = relationship(
         back_populates="project",
