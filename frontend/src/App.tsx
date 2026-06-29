@@ -4,11 +4,14 @@ import { AppLayout } from './components/layout/AppLayout'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
+import ProjectsPage from './pages/ProjectPage'
+import CreateProjectPage from './pages/CreateProjectPage'
+import EditProjectPage from './pages/EditProjectPage'
 
 // Pages (заглушки)
 const FeedPage = () => <div>Feed Page</div>
 const MatchesPage = () => <div>Matches Page</div>
-const ProjectsPage = () => <div>Projects Page</div>
+
 
 // Protected Route
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -59,6 +62,22 @@ function App() {
           element={
             <ProtectedRoute>
               <ProjectsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/create"
+          element={
+            <ProtectedRoute>
+              <CreateProjectPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditProjectPage />
             </ProtectedRoute>
           }
         />

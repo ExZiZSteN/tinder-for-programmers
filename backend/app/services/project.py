@@ -21,13 +21,16 @@ class ProjectService:
         self.db = db
 
     async def create(self, user: User, data: ProjectCreateRequest) -> ProjectResponse:
+
+        status = data.status if data.status else ProjectStatus.OPEN
+
         project = await self.repo.create(
             owner_id=user.id,
             title=data.title,
             description=data.description,
             format=data.format,
             payment_type=data.payment_type,
-            status=ProjectStatus.OPEN,
+            status=status,
         )
 
         self.db.add(ProjectMember(
