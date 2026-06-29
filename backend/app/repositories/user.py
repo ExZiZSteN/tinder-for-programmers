@@ -26,3 +26,10 @@ class UserRepository(BaseRepository[User]):
             select(User).where(User.is_active == True).limit(limit).offset(offset).order_by(User.created_at.desc())
         )
         return result.scalars().all()
+
+    async def get_by_id(self, user_id: int) -> User | None:
+        result = await self.db.execute(
+            select(User).where(User.id == user_id)
+        )
+
+        return result.scalar_one_or_none()

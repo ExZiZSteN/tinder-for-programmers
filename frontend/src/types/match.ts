@@ -6,8 +6,8 @@ export interface Match {
   status: 'active' | 'completed' | 'closed'
   created_at: string
   closed_at?: string
-  project: MatchProject
-  user: MatchUser
+  project?: MatchProject
+  user?: MatchUser
 }
 
 export interface MatchProject {
@@ -17,13 +17,13 @@ export interface MatchProject {
   owner: {
     id: number
     full_name: string
-    avatar_url?: string
+    avatar_file_id?: number
   }
 }
 
 export interface MatchUser {
   id: number
   full_name: string
-  avatar_url?: string
+  avatar_file_id?: number
   experience_years?: number
 }

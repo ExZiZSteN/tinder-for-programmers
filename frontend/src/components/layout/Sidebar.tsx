@@ -10,13 +10,15 @@ import {
   FolderKanban,
   LogOut,
   Menu,
-  Shield,  // ✅ Добавлен импорт
+  Shield,
+  Inbox,
 } from 'lucide-react'
 import { AvatarImage } from '../profile/AvatarImage'
 
 const navItems = [
   { to: '/feed', label: 'Лента', icon: Heart },
-  { to: '/matches', label: 'Матчи', icon: MessageCircle },
+  { to: '/inbox', label: 'Отклики', icon: Inbox },
+  { to: '/matches', label: 'Мэтчи', icon: MessageCircle },
   { to: '/projects', label: 'Проекты', icon: FolderKanban },
   { to: '/profile', label: 'Профиль', icon: User },
 ]
@@ -79,7 +81,7 @@ export function Sidebar() {
           </NavLink>
         ))}
 
-        {/* ✅ Админка внутри nav и return */}
+        {/* Админка внутри nav и return */}
         {user?.user_role === 'admin' && (
           <NavLink
             to="/admin"

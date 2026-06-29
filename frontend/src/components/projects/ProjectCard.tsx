@@ -36,6 +36,8 @@ export function ProjectCard({ project, isOwner = false }: ProjectCardProps) {
     archived: 'bg-gray-100 text-gray-700',
   }
 
+  const activeMembersCount = project.members?.filter(m => m.is_active).length
+
   return (
     <div className="rounded-lg border bg-card p-6 hover:shadow-lg transition-shadow flex flex-col h-full group/card">
       {/* Header */}
@@ -96,7 +98,7 @@ export function ProjectCard({ project, isOwner = false }: ProjectCardProps) {
         {project.members && project.members.length > 0 && (
           <div className="flex items-center gap-1 text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span>{project.members.length}</span>
+            <span>{activeMembersCount}</span>
           </div>
         )}
       </div>

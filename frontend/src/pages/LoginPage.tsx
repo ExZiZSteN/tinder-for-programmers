@@ -23,8 +23,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData, e?: React.BaseSyntheticEvent) => {
     e?.preventDefault() // Явно предотвращаем reload формы
-    console.log('🔐 Попытка входа:', data.email)
-    
+  
     try {
       // 1. Логинимся
       const { access_token, refresh_token } = await authApi.login({

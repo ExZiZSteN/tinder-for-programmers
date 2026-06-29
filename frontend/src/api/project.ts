@@ -42,4 +42,16 @@ export const projectsApi = {
         const response = await apiClient.post(`/projects/${id}/restore`)
         return response.data
     },
+    
+    updateMemberRole: async (
+        projectId: number,
+        userId: number,
+        role: string
+    ): Promise<void> => {
+        await apiClient.patch(`/projects/${projectId}/members/${userId}`, { role })
+    },
+
+    removeMember: async (projectId: number, userId: number): Promise<void> => {
+        await apiClient.delete(`/projects/${projectId}/members/${userId}`)
+    },
 }

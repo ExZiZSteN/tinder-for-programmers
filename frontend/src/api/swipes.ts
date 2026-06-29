@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import type { Swipe, SwipeCreate } from '@/types/swipe'
+import type { Project } from '@/types/project'
 
 export const swipesApi = {
   // Создать свайп (лайк/дизлайк проекта)
@@ -15,10 +16,15 @@ export const swipesApi = {
   },
 
   // Ответить на свайп (approved/rejected)
-  review: async (swipeId: number, action: 'approved' | 'rejected'): Promise<Swipe> => {
+  review: async (swipeId: number, status: 'approved' | 'rejected'): Promise<Swipe> => {
     const response = await apiClient.patch(`/swipes/${swipeId}/review`, {
-      action,
+      status,
     })
+    return response.data
+  },
+
+  getFeed: async (params?: {limit?: number; offest?: number }): Promise<Project[]> => {
+    const response = await apiClient.get('/feed', { params })
     return response.data
   },
 }
