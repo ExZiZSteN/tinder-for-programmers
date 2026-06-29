@@ -56,7 +56,7 @@ export function ProjectCard({ project, isOwner = false }: ProjectCardProps) {
           <span
             className={cn(
               'px-2 py-1 rounded text-xs font-medium shrink-0 transition-opacity duration-200',
-              'group-hover/card:opacity-0',  // ✅ Скрываем при наведении
+              'group-hover:opacity-0',  // Скрываем при наведении
               statusColor[project.status]
             )}
           >

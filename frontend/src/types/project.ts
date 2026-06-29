@@ -45,5 +45,6 @@ export interface ProjectUpdate {
   description?: string
   format?: 'remote' | 'office' | 'hybrid'
   payment_type?: 'volunteer' | 'paid' | 'equity'
+  status?: 'draft' | 'open' | 'closed' | 'completed' | 'archived'
   skill_ids?: number[]
 }

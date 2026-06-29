@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
 import ProjectsPage from './pages/ProjectPage'
 import CreateProjectPage from './pages/CreateProjectPage'
+import EditProjectPage from './pages/EditProjectPage'
 
 // Pages (заглушки)
 const FeedPage = () => <div>Feed Page</div>
@@ -69,6 +70,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateProjectPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditProjectPage />
             </ProtectedRoute>
           }
         />
