@@ -51,7 +51,7 @@ export function ProjectCard({ project, isOwner = false }: ProjectCardProps) {
             от {project.owner?.full_name || 'Неизвестный автор'}
           </p>
         </div>
-        {/* ✅ Статус исчезает при наведении (только если isOwner) */}
+        {/* Статус исчезает при наведении (только если isOwner) */}
         {isOwner ? (
           <span
             className={cn(
