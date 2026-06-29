@@ -17,14 +17,19 @@ export interface Project {
 export interface ProjectOwner {
   id: number
   full_name: string
-  avatar_url?: string
+  avatar_file_id: number
 }
 
 export interface ProjectMember {
-  id: number
+  user_id: number
   role: string
   joined_at?: string
   is_active: boolean
+  user: {
+    id: number
+    full_name: string
+    avatar_file_id?: number
+  }
 }
 export interface Skill {
   id: number

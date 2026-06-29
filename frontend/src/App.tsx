@@ -8,6 +8,8 @@ import ProjectsPage from './pages/ProjectPage'
 import CreateProjectPage from './pages/CreateProjectPage'
 import EditProjectPage from './pages/EditProjectPage'
 import AdminPage from './pages/AdminPage'
+import ProjectDetailPage from './pages/ProjectDetailPage'
+
 
 // Pages (заглушки)
 const FeedPage = () => <div>Feed Page</div>
@@ -84,6 +86,14 @@ function App() {
           element={
             <ProtectedRoute>
               <EditProjectPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:id"
+          element={
+            <ProtectedRoute>
+              <ProjectDetailPage />
             </ProtectedRoute>
           }
         />

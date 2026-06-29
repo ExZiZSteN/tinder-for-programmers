@@ -5,6 +5,14 @@ from pydantic import BaseModel, Field
 from app.schemas.skill import SkillResponse
 from app.models.project import ProjectStatus
 
+
+
+class MemberUserResponse(BaseModel):
+    id: int
+    full_name: str
+    avatar_file_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}
 class ProjectOwnerResponse(BaseModel):
     id: int
     full_name: str
@@ -16,7 +24,8 @@ class ProjectMemberResponse(BaseModel):
     role: str
     joined_at: Optional[datetime] = None
     is_active: bool = True
-
+    user: MemberUserResponse
+    
     model_config = {"from_attributes": True}
 
 
