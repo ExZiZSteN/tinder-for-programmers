@@ -31,5 +31,5 @@ class Skill(Base):
         lazy="selectin",
     )
     projects: Mapped[list["Project"]] = relationship(
-        secondary="project_skills", back_populates="skills", lazy="selectin"
+        secondary="project_skills", back_populates="skills", lazy="selectin", overlaps="project_skills,skills"
     )

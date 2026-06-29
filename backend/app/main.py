@@ -21,10 +21,34 @@ async def lifespan(app: FastAPI):
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
     await init_minio_bucket()
+
+    await create_default_admin()
     yield
     await engine.dispose()
 
 setup_logging()
+
+async def create_default_admin():
+    from app.core.database import async_session
+    from app.models.user import User
+    from app.core.security import hash_password
+    from sqlalchemy import select
+    
+    async with async_session() as db:
+        result = await db.execute(select(User).where(User.user_role == 'admin'))
+        admin = result.scalar_one_or_none()
+        
+        if not admin:
+            admin = User(
+                email='admin@admin.com',
+                full_name='Администратор',
+                password_hash=hash_password('admin123'),
+                user_role='admin',
+                is_active=True,
+            )
+            db.add(admin)
+            await db.commit()
+            print("Админ создан: admin@example.com / admin123")
 
 app = FastAPI(
     title="Tinder for Programmers",

@@ -7,6 +7,7 @@ import ProfilePage from './pages/ProfilePage'
 import ProjectsPage from './pages/ProjectPage'
 import CreateProjectPage from './pages/CreateProjectPage'
 import EditProjectPage from './pages/EditProjectPage'
+import AdminPage from './pages/AdminPage'
 
 // Pages (заглушки)
 const FeedPage = () => <div>Feed Page</div>
@@ -14,13 +15,18 @@ const MatchesPage = () => <div>Matches Page</div>
 
 
 // Protected Route
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  
+  const user = useAuthStore((state) => state.user)
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
   
+  if (requireAdmin && user?.user_role !== 'admin'){
+    return <Navigate to='/feed' replace />
+  }
+
   return <AppLayout>{children}</AppLayout>
 }
 
@@ -80,6 +86,14 @@ function App() {
               <EditProjectPage />
             </ProtectedRoute>
           }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminPage />
+            </ProtectedRoute>
+          } 
         />
         {/* Redirect */}
         <Route path="/" element={<Navigate to="/feed" replace />} />

@@ -9,6 +9,7 @@ from app.api.projects import router as projects_router
 from app.api.swipes import router as swipes_router
 from app.api.users import router as users_router
 from app.api.skills import router as skills_router
+from app.api.admin import router as admin_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth")
@@ -21,3 +22,4 @@ api_router.include_router(projects_router, prefix="/projects")
 api_router.include_router(swipes_router, prefix="/swipes")
 api_router.include_router(users_router, prefix="/users")
 api_router.include_router(skills_router, prefix="/skills")
+api_router.include_router(admin_router, prefix='/admin')
