@@ -24,6 +24,7 @@ class RecommendationService:
             .options(
                 selectinload(Project.owner),
                 selectinload(Project.project_skills),
+                selectinload(Project.members),
             )
             .where(
                 Project.owner_id != user.id,

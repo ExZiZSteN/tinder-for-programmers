@@ -4,13 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.project import Project
-from app.models.swipe import Swipe
+from app.models.swipe import Swipe, SwipeStatus
 from app.models.user import User
 from app.repositories.match import MatchRepository
 from app.repositories.project import ProjectRepository
 from app.repositories.swipe import SwipeRepository
 from app.schemas.match import MatchResponse
-from app.schemas.swipe import SwipeCreateRequest, SwipeResponse, SwipeReviewRequest, SwipeStatus
+from app.schemas.swipe import SwipeCreateRequest, SwipeResponse, SwipeReviewRequest
 from app.services.notification import NotificationService
 
 

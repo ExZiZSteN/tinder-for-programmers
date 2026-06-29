@@ -3,6 +3,21 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from app.models.swipe import SwipeStatus
 
+
+class SwipeUserResponse(BaseModel):
+    id: int
+    full_name: str
+    avatar_file_id: Optional[int] = None
+    
+    model_config = {"from_attributes": True}
+
+
+class SwipeProjectResponse(BaseModel):
+    id: int
+    title: str
+    
+    model_config = {"from_attributes": True}
+
 class SwipeResponse(BaseModel):
     id: int
     user_id: int
@@ -11,7 +26,8 @@ class SwipeResponse(BaseModel):
     status: SwipeStatus
     created_at: Optional[datetime] = None
     reviewed_at: Optional[datetime] = None
-
+    user: Optional[SwipeUserResponse] = None
+    project: Optional[SwipeProjectResponse] = None
     model_config = {"from_attributes": True}
 
 

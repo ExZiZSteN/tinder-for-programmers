@@ -19,7 +19,7 @@ from app.models.base import Base  # noqa: F401 - ensures all models are loaded
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await conn.run_sync(Base.metadata.create_all)
+        # await conn.run_sync(Base.metadata.create_all)
     await init_minio_bucket()
 
     await create_default_admin()

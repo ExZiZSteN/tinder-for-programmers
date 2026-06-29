@@ -14,6 +14,7 @@ class SwipeStatus(str, Enum):
     REJECTED = "rejected"
     PENDING = "pending"
     WITHDRAWN = "withdrawn"
+    
 class Swipe(Base):
     __tablename__ = "swipes"
 

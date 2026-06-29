@@ -23,7 +23,7 @@ class SwipeRepository(BaseRepository[Swipe]):
 
     async def get_by_id_with_project(self, swipe_id: int) -> Swipe | None:
         result = await self.db.execute(
-            select(Swipe).options(selectinload(Swipe.project))
+            select(Swipe).options(selectinload(Swipe.project), selectinload(Swipe.user))
             .where(Swipe.id == swipe_id)
         )
         return result.scalar_one_or_none()
@@ -51,8 +51,17 @@ class SwipeRepository(BaseRepository[Swipe]):
         return set(result.scalars().all())
 
     async def get_inbox_by_owner(self, owner_id: int) -> Sequence[Swipe]:
+
+        owner_projects_results = await self.db.execute(
+            select(Project.id).where(Project.owner_id == owner_id)
+        )
+        project_ids = [row[0] for row in owner_projects_results.all()]
+        if not project_ids:
+            return []
+
         result = await self.db.execute(
-            select(Swipe).join(Project, Swipe.project_id, Swipe.status == SwipeStatus.PENDING)
+            select(Swipe).options(selectinload(Swipe.user), selectinload(Swipe.project),)
+            .where(Swipe.project_id.in_(project_ids), Swipe.status == SwipeStatus.PENDING,)
             .order_by(Swipe.created_at.desc())
         )
         return result.scalars().all()

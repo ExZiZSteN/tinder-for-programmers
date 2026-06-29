@@ -1,9 +1,9 @@
 # backend/alembic/script.py.mako
 """initial schema
 
-Revision ID: 4714969e0414
+Revision ID: 434b95ad296f
 Revises:
-Create Date: 2026-06-25 23:10:38.264363+00:00
+Create Date: 2026-06-29 19:58:32.234562+00:00
 
 """
 
@@ -16,7 +16,7 @@ import pgvector.sqlalchemy
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "4714969e0414"
+revision = "434b95ad296f"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -228,7 +228,11 @@ def upgrade() -> None:
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("project_id", sa.BigInteger(), nullable=False),
         sa.Column("message", sa.Text(), nullable=True),
-        sa.Column("status", sa.String(length=20), nullable=False),
+        sa.Column(
+            "status",
+            sa.Enum("APPROVED", "REJECTED", "PENDING", "WITHDRAWN", name="swipe_status"),
+            nullable=False,
+        ),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

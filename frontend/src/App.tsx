@@ -9,12 +9,9 @@ import CreateProjectPage from './pages/CreateProjectPage'
 import EditProjectPage from './pages/EditProjectPage'
 import AdminPage from './pages/AdminPage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
-
-
-// Pages (заглушки)
-const FeedPage = () => <div>Feed Page</div>
-const MatchesPage = () => <div>Matches Page</div>
-
+import MatchesPage from './pages/MatchesPage'
+import FeedPage from './pages/FeedPage'
+import InboxPage from './pages/InboxPage'
 
 // Protected Route
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -94,6 +91,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ProjectDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/inbox"
+          element={
+            <ProtectedRoute>
+              <InboxPage />
             </ProtectedRoute>
           }
         />
