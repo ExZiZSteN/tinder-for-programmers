@@ -17,7 +17,6 @@ export interface MatchProject {
   owner: {
     id: number
     full_name: string
-    avatar_url?: string
     avatar_file_id?: number
   }
 }
@@ -25,7 +24,6 @@ export interface MatchProject {
 export interface MatchUser {
   id: number
   full_name: string
-  avatar_url?: string
   avatar_file_id?: number
   experience_years?: number
 }

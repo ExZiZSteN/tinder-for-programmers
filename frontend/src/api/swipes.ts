@@ -16,9 +16,9 @@ export const swipesApi = {
   },
 
   // Ответить на свайп (approved/rejected)
-  review: async (swipeId: number, action: 'approved' | 'rejected'): Promise<Swipe> => {
+  review: async (swipeId: number, status: 'approved' | 'rejected'): Promise<Swipe> => {
     const response = await apiClient.patch(`/swipes/${swipeId}/review`, {
-      action,
+      status,
     })
     return response.data
   },

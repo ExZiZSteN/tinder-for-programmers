@@ -1,10 +1,13 @@
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.user import User
-from app.models.match import MatchStatus
+from app.models.project import Project
+from app.models.match import MatchStatus, Match
 from app.repositories.match import MatchRepository
 from app.schemas.match import MatchResponse
 
@@ -15,25 +18,62 @@ class MatchService:
         self.db = db
 
     async def list_matches(self, user: User) -> list[MatchResponse]:
-        matches = await self.repo.get_by_user(user.id)
+        """Получить список матчей пользователя (как участник или как владелец проекта)."""
+        result = await self.db.execute(
+            select(Match)
+            .options(
+                selectinload(Match.project).selectinload(Project.owner),
+                selectinload(Match.user),
+            )
+            .where(
+                Match.user_id == user.id,
+                Match.status == MatchStatus.ACTIVE,
+            )
+            .order_by(Match.created_at.desc())
+        )
+        matches = result.scalars().all()
         return [MatchResponse.model_validate(m) for m in matches]
 
     async def get_by_id(self, user: User, match_id: int) -> MatchResponse:
-        match = await self.repo.get_by_id(match_id)
+        """Получить матч по ID с подгрузкой всех связанных данных."""
+        result = await self.db.execute(
+            select(Match)
+            .options(
+                selectinload(Match.project).selectinload(Project.owner),
+                selectinload(Match.user),
+            )
+            .where(Match.id == match_id)
+        )
+        match = result.scalar_one_or_none()
+
         if not match:
-            raise NotFoundException("Match")
+            raise NotFoundException("Match not found")
+
         if match.user_id != user.id and match.project.owner_id != user.id:
             raise ForbiddenException("Not a participant of this match")
+
         return MatchResponse.model_validate(match)
 
     async def close(self, user: User, match_id: int) -> None:
-        match = await self.repo.get_by_id(match_id)
+        """Закрыть матч."""
+        result = await self.db.execute(
+            select(Match)
+            .options(
+                selectinload(Match.project),
+            )
+            .where(Match.id == match_id)
+        )
+        match = result.scalar_one_or_none()
+
         if not match:
-            raise NotFoundException("Match")
+            raise NotFoundException("Match not found")
+
         if match.user_id != user.id and match.project.owner_id != user.id:
             raise ForbiddenException("Not a participant of this match")
-        if match.status != MatchStatus.ACTIVE:
+
+        if match.status != MatchStatus.ACTIVE.value:
             raise BadRequestException("Match is already closed")
 
-        match = await self.repo.close_status(match)
+        match.status = MatchStatus.CLOSED.value
+        match.closed_at = datetime.now(timezone.utc)
         await self.db.commit()

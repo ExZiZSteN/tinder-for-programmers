@@ -137,6 +137,7 @@ export default function FeedPage() {
   }
 
   const currentProject = projects[currentIndex]
+  const currentProjectMembers = projects[currentIndex].members?.filter(m => m.is_active).length
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -238,7 +239,7 @@ export default function FeedPage() {
             {currentProject.members && currentProject.members.length > 0 && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" />
-                <span>В команде уже {currentProject.members.length} человек</span>
+                <span>В команде уже {currentProjectMembers} человек</span>
               </div>
             )}
 

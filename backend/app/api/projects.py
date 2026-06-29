@@ -9,7 +9,12 @@ from app.schemas.project import (
     ProjectUpdateRequest,
 )
 from app.services.project import ProjectService
-
+from app.schemas.project_member import (
+    ProjectMemberUpdateRequest,
+    ProjectMemberResponse,
+)
+from app.services.project import ProjectService
+from app.services.project_member import ProjectMemberService
 router = APIRouter()
 
 
@@ -103,3 +108,27 @@ async def resotre_project(
 ):
     service = ProjectService(db)
     return await service.restore(user, project_id)
+
+@router.patch("/{project_id}/members/{user_id}", response_model=ProjectMemberResponse)
+async def update_member_role(
+    project_id: int,
+    user_id: int,
+    body: ProjectMemberUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Изменить роль участника проекта (только для владельца)."""
+    service = ProjectMemberService(db)
+    return await service.update_member_role(current_user, project_id, user_id, body)
+
+
+@router.delete("/{project_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_member(
+    project_id: int,
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Исключить участника из проекта (только для владельца)."""
+    service = ProjectMemberService(db)
+    await service.remove_member(current_user, project_id, user_id)

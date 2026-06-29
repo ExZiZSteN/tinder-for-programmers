@@ -24,6 +24,7 @@ export interface ProjectMember {
   user_id: number
   role: string
   joined_at?: string
+  left_at?: string
   is_active: boolean
   user: {
     id: number

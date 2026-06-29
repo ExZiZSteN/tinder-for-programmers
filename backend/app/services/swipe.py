@@ -6,9 +6,11 @@ from app.core.exceptions import BadRequestException, ForbiddenException, NotFoun
 from app.models.project import Project
 from app.models.swipe import Swipe, SwipeStatus
 from app.models.user import User
+from app.models.project_member import ProjectMember
 from app.repositories.match import MatchRepository
 from app.repositories.project import ProjectRepository
 from app.repositories.swipe import SwipeRepository
+from app.repositories.user import UserRepository
 from app.schemas.match import MatchResponse
 from app.schemas.swipe import SwipeCreateRequest, SwipeResponse, SwipeReviewRequest
 from app.services.notification import NotificationService
@@ -97,8 +99,17 @@ class SwipeService:
                 project_id=swipe.project_id,
                 swipe_id=swipe.id,
             )
+            
+            project_member = ProjectMember(
+                project_id=swipe.project_id,
+                user_id=swipe.user_id,
+                role="member",  # или "developer"
+                is_active=True,
+            )
+            self.db.add(project_member)
+            await self.db.flush()
 
-            from app.repositories.user import UserRepository
+
             developer = await UserRepository(self.db).get_by_id(swipe.user_id)
             dev_name = developer.full_name if developer else "Разработчик"
             await notif.create(
