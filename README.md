@@ -33,7 +33,9 @@ cp .env.example .env
 # 3. Поднять Docker
 
 docker compose up --build
-
+docker compose run --rm backend alembic upgrade head
+docker compose cp scripts/seed_skills.py backend:app/scripts/seed_skill.py
+docker compose exec backend python scripts/seed_skills.py # наполнение навыков
 ```
 
 ## 📚 Документация
