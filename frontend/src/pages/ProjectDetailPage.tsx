@@ -18,6 +18,7 @@ import {
   CheckCircle,
   Trash2,
   Shield,
+  MessageCircle,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
@@ -261,18 +262,24 @@ export default function ProjectDetailPage() {
 
       {/* Team Members */}
       {project.members && project.members.length > 0 && (
-        <div className="rounded-lg border bg-card p-6">
+      <div className="rounded-lg border bg-card p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Команда проекта ({project.members.filter((m) => m.is_active).length})
+              <Users className="h-5 w-5" />
+              Команда проекта ({project.members.filter((m) => m.is_active).length})
           </h2>
           <div className="space-y-3">
-            {project.members
-              .filter((m) => m.is_active)
-              .map((member) => (
+            {project.members.filter((m) => m.is_active)
+                .map((member) => (
                 <div
                   key={member.user_id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                  onClick={() => 
+                    navigate(
+                      member.user_id === user?.id
+                      ? `/profile`
+                      : `/users/${member.user_id}`
+                    )
+                  }
                 >
                   <div className="flex items-center gap-3">
                     {/* Аватар участника */}
@@ -369,6 +376,13 @@ export default function ProjectDetailPage() {
       <div className="flex gap-3 sticky bottom-6">
         {isOwner ? (
           <>
+          <Button
+            size="lg"
+            onClick={() => navigate(`/projects/${project.id}/chat`)}
+          >
+            <MessageCircle className='h-4 w-4 mr-2' />
+            Чат проекта
+          </Button>
             <Button
               size="lg"
               onClick={() => navigate(`/projects/${project.id}/edit`)}
@@ -388,10 +402,19 @@ export default function ProjectDetailPage() {
             )}
           </>
         ) : isMember ? (
+          <>
+          <Button
+            size="lg"
+            onClick={() => navigate(`/projects/${project.id}/chat`)}
+          >
+            <MessageCircle className='h-4 w-4 mr-2' />
+            Чат проекта
+          </Button>
           <Button size="lg" disabled>
             <CheckCircle className="h-4 w-4 mr-2" />
             Вы участник проекта
           </Button>
+          </> 
         ) : project.status === 'open' ? (
           <Button
             size="lg"

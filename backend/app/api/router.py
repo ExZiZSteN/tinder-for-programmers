@@ -10,6 +10,7 @@ from app.api.swipes import router as swipes_router
 from app.api.users import router as users_router
 from app.api.skills import router as skills_router
 from app.api.admin import router as admin_router
+from app.api.project_chat import router as project_chat_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth")
@@ -23,3 +24,4 @@ api_router.include_router(swipes_router, prefix="/swipes")
 api_router.include_router(users_router, prefix="/users")
 api_router.include_router(skills_router, prefix="/skills")
 api_router.include_router(admin_router, prefix='/admin')
+api_router.include_router(project_chat_router, prefix='/projects')

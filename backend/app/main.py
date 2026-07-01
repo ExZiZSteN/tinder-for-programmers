@@ -9,6 +9,7 @@ from app.core.logging import setup_logging
 from app.api.router import api_router
 from app.api.ws_chat import handle_chat_ws
 from app.api.ws_notifications import handle_notifications_ws
+from app.api.ws_project_chat import handle_project_chat_ws
 from app.core.config import settings
 from app.core.database import engine
 from app.core.minio_client import init_minio_bucket
@@ -73,6 +74,10 @@ async def chat_websocket(websocket: WebSocket, match_id: int):
 @app.websocket("/ws/notifications")
 async def notifications_websocket(websocket: WebSocket):
     await handle_notifications_ws(websocket)
+
+@app.websocket("/ws/project/{project_id}")
+async def project_chat_websocket(websocket: WebSocket, project_id: int):
+    await handle_project_chat_ws(websocket, project_id)
 
 @app.get("/")
 async def root():

@@ -27,7 +27,7 @@ class ProjectMember(Base):
         index=True,
     )
     role: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="developer"
+        String(20), nullable=False, default="member"
     )  # 'developer', 'teamlead', 'owner'
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
