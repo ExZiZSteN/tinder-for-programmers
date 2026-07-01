@@ -28,18 +28,18 @@ class Message(Base):
     match_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("matches.id", ondelete="CASCADE"),
-        nullable=False
+        nullable=False, index=True
     )
     
     sender_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=False
+        nullable=False, index=True
     )
     
     content: Mapped[str] = mapped_column(Text, nullable=False)
     
-    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
     
     read_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),

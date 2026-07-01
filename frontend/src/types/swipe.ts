@@ -4,6 +4,7 @@ export interface Swipe {
   project_id: number
   message?: string
   status: 'pending' | 'approved' | 'rejected' | 'withdrawn' | 'liked' | 'disliked'
+  match_id?: number
   created_at: string
   reviewed_at?: string
   user?: SwipeUser
@@ -22,6 +23,11 @@ export interface SwipeUser {
 export interface SwipeProject {
   id: number
   title: string
+  owner?: {
+    id: number
+    full_name: string
+    avatar_file_id?: number
+  }
 }
 
 export interface SwipeCreate {

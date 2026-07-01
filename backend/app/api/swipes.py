@@ -27,7 +27,16 @@ async def get_inbox(
     service = SwipeService(db)
     return await service.get_inbox(user)
 
+@router.get("/my", response_model=list[SwipeResponse])
+async def get_my_swipes(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Получить все отклики, отправленные текущим пользователем."""
+    service = SwipeService(db)
+    return await service.get_my_swipes(user)
 
+# этот endpoint всегда последний
 @router.patch("/{swipe_id}/review")
 async def review_swipe(
     swipe_id: int,

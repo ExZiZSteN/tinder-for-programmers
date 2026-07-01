@@ -1,16 +1,14 @@
 from datetime import datetime, timezone
-
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.project import Project
 from app.models.swipe import Swipe, SwipeStatus
+from app.models.match import Match, MatchStatus
 from app.models.user import User
 from app.models.project_member import ProjectMember
 from app.repositories.match import MatchRepository
 from app.repositories.project import ProjectRepository
 from app.repositories.swipe import SwipeRepository
-from app.repositories.user import UserRepository
 from app.schemas.match import MatchResponse
 from app.schemas.swipe import SwipeCreateRequest, SwipeResponse, SwipeReviewRequest
 from app.services.notification import NotificationService
@@ -21,13 +19,12 @@ class SwipeService:
         self.swipe_repo = SwipeRepository(db)
         self.project_repo = ProjectRepository(db)
         self.match_repo = MatchRepository(db)
-        self.swipe_repo = SwipeRepository(db)
         self.db = db
 
     async def create(self, user: User, data: SwipeCreateRequest) -> SwipeResponse:
         project = await self.project_repo.get_by_id(data.project_id)
         if not project:
-            raise NotFoundException("Project")
+            raise NotFoundException("Project not found")
 
         if project.owner_id == user.id:
             raise BadRequestException("Cannot swipe on your own project")
@@ -44,6 +41,17 @@ class SwipeService:
             message=data.message,
         )
 
+        match = await self.match_repo.create(
+            user_id=user.id,
+            project_id=data.project_id,
+            swipe_id=swipe.id,
+        )
+        match.status = MatchStatus.PENDING
+        await self.db.flush()
+
+        swipe.match_id = match.id
+        await self.db.flush()
+
         notif = NotificationService(self.db)
         await notif.create(
             user_id=project.owner_id,
@@ -52,6 +60,7 @@ class SwipeService:
             body=f"{user.full_name} хочет присоединиться к проекту «{project.title}»",
             payload={
                 "swipe_id": swipe.id,
+                "match_id": match.id,
                 "developer_name": user.full_name,
                 "project_title": project.title,
             },
@@ -62,11 +71,16 @@ class SwipeService:
     async def get_inbox(self, user: User) -> list[SwipeResponse]:
         swipes = await self.swipe_repo.get_inbox_by_owner(user.id)
         return [SwipeResponse.model_validate(s) for s in swipes]
+    
+    async def get_my_swipes(self, user: User) -> list[SwipeResponse]:
+        """Получить все отклики, отправленные текущим пользователем."""
+        swipes = await self.swipe_repo.get_my_swipes_by_user(user.id)
+        return [SwipeResponse.model_validate(s) for s in swipes]
 
     async def review(self, user: User, swipe_id: int, data: SwipeReviewRequest) -> SwipeResponse | MatchResponse:
         swipe = await self.swipe_repo.get_by_id_with_project(swipe_id)
         if not swipe:
-            raise NotFoundException("Swipe")
+            raise NotFoundException("Swipe not found")
 
         if swipe.project.owner_id != user.id:
             raise ForbiddenException("Only the project owner can review swipes")
@@ -75,10 +89,16 @@ class SwipeService:
             raise BadRequestException("Swipe has already been reviewed")
 
         swipe = await self.swipe_repo.set_status(swipe, data.status)
-        await self.db.commit()
+
+        match = await self.match_repo.get_by_swipe_id(swipe.id)
+        if not match:
+            raise NotFoundException("Match not found")
 
         notif = NotificationService(self.db)
         if data.status == SwipeStatus.APPROVED.value:
+            match.status = MatchStatus.ACTIVE
+            await self.db.commit()
+
             await notif.create(
                 user_id=swipe.user_id,
                 type="swipe_approved",
@@ -87,30 +107,16 @@ class SwipeService:
                 payload={"swipe_id": swipe.id, "project_title": swipe.project.title},
             )
 
-            existing = await self.match_repo.get_active_by_project_and_user(
-                project_id=swipe.project_id,
-                user_id=swipe.user_id,
-            )
-            if existing:
-                return MatchResponse.model_validate(existing)
-
-            match = await self.match_repo.create(
-                user_id=swipe.user_id,
-                project_id=swipe.project_id,
-                swipe_id=swipe.id,
-            )
-            
             project_member = ProjectMember(
                 project_id=swipe.project_id,
                 user_id=swipe.user_id,
-                role="member",  # или "developer"
+                role="member",
                 is_active=True,
             )
             self.db.add(project_member)
             await self.db.flush()
 
-
-            developer = await UserRepository(self.db).get_by_id(swipe.user_id)
+            developer = await self.db.get(User, swipe.user_id)
             dev_name = developer.full_name if developer else "Разработчик"
             await notif.create(
                 user_id=swipe.project.owner_id,
@@ -136,6 +142,10 @@ class SwipeService:
             )
 
             return MatchResponse.model_validate(match)
+
+        match.status = MatchStatus.REJECTED
+        match.closed_at = datetime.now(timezone.utc)
+        await self.db.commit()
 
         await notif.create(
             user_id=swipe.user_id,

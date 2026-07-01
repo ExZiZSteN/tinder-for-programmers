@@ -1,14 +1,5 @@
 import { apiClient } from './client'
-
-export interface Message {
-  id: number
-  match_id: number
-  sender_id: number
-  content: string
-  is_read: boolean 
-  read_at: string | null
-  created_at: string
-}
+import type { Message } from '@/types/chat'
 
 export const chatApi = {
 
@@ -22,18 +13,22 @@ export const chatApi = {
       params.before_id = beforeId
     }
 
-
-    const response = await apiClient.get(`/api/chat/${matchId}/history`, {
+    const response = await apiClient.get(`/chat/${matchId}/history`, {
       params,
     })
     return response.data
   },
 
-
   sendMessage: async (matchId: number, content: string): Promise<Message> => {
-    const response = await apiClient.post(`/api/chat/${matchId}/messages`, {
+    const response = await apiClient.post(`/chat/${matchId}/messages`, {
       content,
     })
     return response.data
   },
+
+  markAsRead: async (matchId: number): Promise<{ read_count: number }> => {
+    const response = await apiClient.post(`/chat/${matchId}/read`)
+    return response.data
+  },
 }
+

@@ -66,6 +66,19 @@ class SwipeRepository(BaseRepository[Swipe]):
         )
         return result.scalars().all()
 
+    async def get_my_swipes_by_user(self, user_id: int) -> Sequence[Swipe]:
+        """Возвращает все свайпы, отправленные пользователем."""
+        result = await self.db.execute(
+            select(Swipe)
+            .options(
+                selectinload(Swipe.project),
+                selectinload(Swipe.user),
+            )
+            .where(Swipe.user_id == user_id)
+            .order_by(Swipe.created_at.desc())
+        )
+        return result.scalars().all()
+
     async def set_status(self, swipe: Swipe, status: str) -> Swipe:
         swipe.status = status
         swipe.reviewed_at = datetime.now(timezone.utc)

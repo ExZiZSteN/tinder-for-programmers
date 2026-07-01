@@ -55,7 +55,7 @@ class MatchRepository(BaseRepository[Match]):
             select(Match)
             .where(
                 Match.project_id == project_id,
-                Match.status == "active",
+                Match.status == MatchStatus.ACTIVE,
             )
         )
         return result.scalars().all()

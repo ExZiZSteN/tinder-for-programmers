@@ -15,6 +15,11 @@ export const swipesApi = {
     return response.data
   },
 
+    getMySwipes: async (): Promise<Swipe[]> => {
+    const response = await apiClient.get('/swipes/my')
+    return response.data
+  },
+
   // Ответить на свайп (approved/rejected)
   review: async (swipeId: number, status: 'approved' | 'rejected'): Promise<Swipe> => {
     const response = await apiClient.patch(`/swipes/${swipeId}/review`, {

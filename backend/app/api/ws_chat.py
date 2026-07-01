@@ -21,13 +21,7 @@ WS_CLOSE_INTERNAL = 1011
 
 
 async def handle_chat_ws(websocket: WebSocket, match_id: int):
-    """
-    Обработчик WebSocket-соединения для чата конкретного мэтча.
-    Обеспечивает авторизацию, проверку прав и реалтайм-рассылку сообщений.
-    """
     await websocket.accept()
-
-
     token = websocket.query_params.get("token")
     if not token:
         await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
@@ -45,18 +39,15 @@ async def handle_chat_ws(websocket: WebSocket, match_id: int):
 
     user_id = int(payload["sub"])
 
-
     async with async_session() as db:
-
         result = await db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
-        
+
         if not user or not user.is_active or user.is_banned:
             await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
             return
 
         service = ChatService(db)
-        
 
         try:
             await service._verify_participant(user, match_id)
@@ -67,44 +58,34 @@ async def handle_chat_ws(websocket: WebSocket, match_id: int):
             await websocket.close(code=WS_CLOSE_FORBIDDEN)
             return
 
-
         await ws_manager.connect(match_id, user_id, websocket)
-
 
         try:
             while True:
                 raw = await websocket.receive_text()
-                
 
                 try:
                     msg_in = WSMessageIn.model_validate_json(raw)
                 except Exception:
-                    await websocket.send_json({"type": "error", "detail": "Invalid message format or constraints"})
+                    await websocket.send_json({"type": "error", "detail": "Invalid message format"})
                     continue
 
                 if msg_in.type != "message":
                     await websocket.send_json({"type": "error", "detail": "Unknown message type"})
                     continue
 
-
                 out = await service.save_message(match_id, user_id, msg_in.content)
 
-
                 await websocket.send_json(out.model_dump(mode="json"))
-                
-
                 await ws_manager.broadcast(match_id, out.model_dump(mode="json"), exclude_user_id=user_id)
 
         except WebSocketDisconnect:
-
-            logger.info(f"User {user_id} disconnected normally from match chat {match_id}")
+            logger.info(f"User {user_id} disconnected from match chat {match_id}")
         except Exception as e:
- 
-            logger.exception(f"Critical error in WebSocket chat loop for match {match_id}: {e}")
+            logger.exception(f"Error in WebSocket chat for match {match_id}: {e}")
             try:
                 await websocket.close(code=WS_CLOSE_INTERNAL)
             except Exception:
                 pass
         finally:
-
             ws_manager.disconnect(match_id, user_id)

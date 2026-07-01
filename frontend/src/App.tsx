@@ -12,6 +12,7 @@ import ProjectDetailPage from './pages/ProjectDetailPage'
 import MatchesPage from './pages/MatchesPage'
 import FeedPage from './pages/FeedPage'
 import InboxPage from './pages/InboxPage'
+import ChatPage from './pages/ChatPage'
 
 // Protected Route
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -99,6 +100,14 @@ function App() {
           element={
             <ProtectedRoute>
               <InboxPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/matches/:matchId/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           }
         />

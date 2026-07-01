@@ -34,29 +34,24 @@ async def handle_notifications_ws(websocket: WebSocket):
         await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
         return
 
-
     if payload.get("type") != "access":
         await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
         return
 
     user_id = int(payload["sub"])
 
-  
     async with async_session() as db:
         result = await db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         
-
         if not user or not user.is_active or user.is_banned:
             await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
             return
-
 
         await notification_manager.connect(user_id, websocket)
 
         try:
             while True:
-
                 await websocket.receive_text()
                 
         except WebSocketDisconnect:
