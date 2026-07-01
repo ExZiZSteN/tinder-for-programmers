@@ -68,7 +68,7 @@ export default function MatchesPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <MessageCircle className="h-8 w-8" />
-            Мои матчи
+            Мои мэтчи
           </h1>
           <p className="text-muted-foreground mt-1">
             Проекты, которые приняли вашу заявку
