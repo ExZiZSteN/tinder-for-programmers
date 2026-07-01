@@ -10,16 +10,11 @@
    ```
 3. Внести изменения
 4. Написать/обновить тесты
-5. Проверить lint:
-   ```bash
-   make lint
-   make test
-   ```
-6. Закоммитить в формате conventional commits:
+5. Закоммитить в формате conventional commits:
    ```bash
    git commit -m "feat(swipe): add animation on like"
    ```
-7. Push и создать Pull Request
+6. Push и создать Pull Request
 
 ## 📝 Conventional Commits
 
