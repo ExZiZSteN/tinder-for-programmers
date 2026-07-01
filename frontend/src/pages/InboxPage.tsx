@@ -214,13 +214,15 @@ function SwipeCard({ swipe, isMySwipe, onReview, navigate }: SwipeCardProps) {
               <span>{new Date(swipe.created_at).toLocaleDateString('ru-RU')}</span>
             </div>
             <StatusBadge status={swipe.status} />
-            <Button
-              variant='outline'
-              className='flex-1 text-accent-foreground'
-              onClick={() => navigate(`/users/${otherUser?.id}`)}
-            >
-              Открыть профиль
-            </Button>
+            {isMySwipe === false && (
+              <Button
+                variant='outline'
+                className='flex-1 text-accent-foreground'
+                onClick={() => navigate(`/users/${otherUser?.id}`)}
+              >
+                Открыть профиль
+              </Button>
+            )}
           </div>
         </div>
       </div>
