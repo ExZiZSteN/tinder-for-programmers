@@ -22,6 +22,8 @@
 
 ## 🚀 Быстрый старт
 
+1.Запустить докер
+2.В терминале выполнить команды
 ```bash
 # 1. Клонировать репозиторий
 git clone https://github.com/ExZiZSteN/tinder-for-programmers
