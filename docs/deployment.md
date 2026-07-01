@@ -25,48 +25,118 @@
 ```yaml
 # docker-compose.prod.yml
 services:
-  backend:
-    build: ./backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
-    environment:
-      - APP_ENV=production
-      - SECRET_KEY=${SECRET_KEY}
-    deploy:
-      replicas: 3
-      resources:
-        limits:
-          memory: 2G
-
-  worker:
-    build: ./backend
-    command: arq app.workers.settings.WorkerSettings
-    deploy:
-      replicas: 2
-
+  # ============================================================
+  # PostgreSQL + pgvector
+  # ============================================================
   db:
     image: pgvector/pgvector:pg16
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    container_name: tinder-db
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: tinder_devs
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tinder_devs"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
+  # ============================================================
+  # Redis
+  # ============================================================
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    container_name: tinder-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
+  # ============================================================
+  # MinIO (S3-compatible storage)
+  # ============================================================
   minio:
     image: minio/minio
+    container_name: tinder-minio
     command: server /data --console-address ":9001"
-    volumes:
-      - miniodata:/data
-
-  nginx:
-    build: ./nginx
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "80:80"
-      - "443:443"
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console
     volumes:
-      - ./nginx/ssl:/etc/nginx/ssl
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================================
+  # Backend (FastAPI)
+  # ============================================================
+  backend:
+    build: ./backend
+    container_name: tinder-backend
+    env_file:
+      - .env
+    environment:
+      # Переопределяем хосты для Docker-сети
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/tinder_devs
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  # ============================================================
+  # Frontend (React + Vite)
+  # ============================================================
+  frontend:
+    build: ./frontend
+    container_name: tinder-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+      - VITE_WS_URL=ws://localhost:8000
+    command: npm run dev -- --host
+    restart: unless-stopped
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
 ```
 
 ##  SSL/HTTPS

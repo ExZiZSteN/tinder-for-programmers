@@ -22,6 +22,8 @@
 
 ## 🚀 Быстрый старт
 
+1.Запустить докер
+2.В терминале выполнить команды
 ```bash
 # 1. Клонировать репозиторий
 git clone https://github.com/ExZiZSteN/tinder-for-programmers
@@ -36,6 +38,23 @@ docker compose up --build
 docker compose run --rm backend alembic upgrade head
 docker compose cp scripts/seed_skills.py backend:app/scripts/seed_skill.py
 docker compose exec backend python scripts/seed_skills.py # наполнение навыков
+docker compose exec db psql -U postgres -d tinder_devs
+
+-- Конвертируем swipes
+UPDATE swipes 
+SET status = LOWER(status::text)::swipe_status;
+
+-- Конвертируем matches
+UPDATE matches 
+SET status = LOWER(status::text)::match_status;
+
+-- Проверяем результат
+SELECT DISTINCT status FROM swipes;
+SELECT DISTINCT status FROM matches;
+\q
+
+docker compose restart backend
+
 ```
 
 ## 📚 Документация
