@@ -13,24 +13,34 @@ import {
   Sparkles,
   Calendar,
   FolderKanban,
+  Inbox as InboxIcon,
+  Send,
 } from 'lucide-react'
 
+type TabType = 'incoming' | 'my'
+
 export default function InboxPage() {
-  const [swipes, setSwipes] = useState<Swipe[]>([])
+  const [activeTab, setActiveTab] = useState<TabType>('incoming')
+  const [incomingSwipes, setIncomingSwipes] = useState<Swipe[]>([])
+  const [mySwipes, setMySwipes] = useState<Swipe[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    loadInbox()
+    loadAll()
   }, [])
 
-  const loadInbox = async () => {
+  const loadAll = async () => {
     try {
       setIsLoading(true)
-      const data = await swipesApi.getInbox()
-      setSwipes(data)
+      const [incoming, my] = await Promise.all([
+        swipesApi.getInbox(),
+        swipesApi.getMySwipes(),
+      ])
+      setIncomingSwipes(incoming)
+      setMySwipes(my)
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Ошибка загрузки заявок')
+      toast.error(error.response?.data?.detail || 'Ошибка загрузки')
     } finally {
       setIsLoading(false)
     }
@@ -39,12 +49,14 @@ export default function InboxPage() {
   const handleReview = async (swipeId: number, action: 'approved' | 'rejected') => {
     try {
       await swipesApi.review(swipeId, action)
-      toast.success(action === 'approved' ? 'Заявка одобрена — создан матч!' : 'Заявка отклонена')
-      setSwipes((prev) => prev.filter((s) => s.id !== swipeId))
+      toast.success(action === 'approved' ? '✅ Заявка одобрена!' : 'Заявка отклонена')
+      setIncomingSwipes((prev) => prev.filter((s) => s.id !== swipeId))
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Ошибка обработки заявки')
+      toast.error(error.response?.data?.detail || 'Ошибка обработки')
     }
   }
+
+  const currentSwipes = activeTab === 'incoming' ? incomingSwipes : mySwipes
 
   if (isLoading) {
     return (
@@ -63,108 +75,224 @@ export default function InboxPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
-            <MessageCircle className="h-8 w-8" />
-            Входящие заявки
+            <InboxIcon className="h-8 w-8" />
+            Заявки
           </h1>
           <p className="text-muted-foreground mt-1">
-            Отклики на ваши проекты
+            Входящие отклики и ваши отклики на проекты
           </p>
         </div>
       </div>
 
-      {/* Swipes List */}
-      {swipes.length === 0 ? (
+      {/* Вкладки */}
+      <div className="flex gap-2 border-b">
+        <button
+          onClick={() => setActiveTab('incoming')}
+          className={`px-4 py-2 font-medium transition-colors relative ${
+            activeTab === 'incoming'
+              ? 'text-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <InboxIcon className="h-4 w-4 inline mr-2" />
+          Входящие
+          {incomingSwipes.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
+              {incomingSwipes.length}
+            </span>
+          )}
+          {activeTab === 'incoming' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('my')}
+          className={`px-4 py-2 font-medium transition-colors relative ${
+            activeTab === 'my'
+              ? 'text-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Send className="h-4 w-4 inline mr-2" />
+          Мои отклики
+          {mySwipes.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-muted text-foreground rounded-full">
+              {mySwipes.length}
+            </span>
+          )}
+          {activeTab === 'my' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+          )}
+        </button>
+      </div>
+
+      {/* Контент */}
+      {currentSwipes.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-96 text-center rounded-lg border bg-card p-12">
           <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-6">
             <Sparkles className="h-12 w-12 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Нет новых заявок</h3>
+          <h3 className="text-xl font-semibold mb-2">
+            {activeTab === 'incoming' ? 'Нет входящих заявок' : 'У вас нет отправленных откликов'}
+          </h3>
           <p className="text-muted-foreground mb-6 max-w-md">
-            Когда кто-то откликнется на ваш проект, заявка появится здесь
+            {activeTab === 'incoming'
+              ? 'Когда кто-то откликнется на ваш проект, заявка появится здесь'
+              : 'Откликайтесь на интересные проекты в ленте'}
           </p>
-          <Button onClick={() => navigate('/projects')}>
+          <Button onClick={() => navigate(activeTab === 'incoming' ? '/projects' : '/feed')}>
             <FolderKanban className="h-4 w-4 mr-2" />
-            Мои проекты
+            {activeTab === 'incoming' ? 'Мои проекты' : 'Перейти в ленту'}
           </Button>
         </div>
       ) : (
         <div className="grid gap-4">
-          {swipes.map((swipe) => (
-            <div
+          {currentSwipes.map((swipe) => (
+            <SwipeCard
               key={swipe.id}
-              className="rounded-lg border bg-card p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-start gap-4">
-                {/* Аватар пользователя */}
-                <div className="h-14 w-14 rounded-full overflow-hidden bg-primary/20 shrink-0">
-                  <AvatarImage
-                    fileId={swipe.user?.avatar_file_id}
-                    fallback={swipe.user?.full_name?.[0]?.toUpperCase() || '?'}
-                    className="text-xl"
-                  />
-                </div>
-
-                {/* Информация */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="min-w-0">
-                      <h3 className="text-lg font-semibold truncate">
-                        {swipe.user?.full_name || 'Неизвестный пользователь'}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Откликнулся на проект:{' '}
-                        <span className="font-medium text-foreground">
-                          {swipe.project?.title || 'Неизвестный проект'}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Сообщение */}
-                  {swipe.message && (
-                    <div className="mt-3 p-3 rounded-lg bg-muted/50">
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Сообщение:</span> {swipe.message}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Мета */}
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>
-                        {new Date(swipe.created_at).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Действия */}
-              <div className="flex gap-3 mt-4 pt-4 border-t">
-                <Button
-                  size="sm"
-                  onClick={() => handleReview(swipe.id, 'approved')}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  Одобрить
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleReview(swipe.id, 'rejected')}
-                  className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Отклонить
-                </Button>
-              </div>
-            </div>
+              swipe={swipe}
+              isMySwipe={activeTab === 'my'}
+              onReview={handleReview}
+              navigate={navigate}
+            />
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+// Отдельный компонент карточки свайпа
+interface SwipeCardProps {
+  swipe: Swipe
+  isMySwipe: boolean
+  onReview: (swipeId: number, action: 'approved' | 'rejected') => void
+  navigate: (path: string) => void
+}
+
+function SwipeCard({ swipe, isMySwipe, onReview, navigate }: SwipeCardProps) {
+  // Для "Входящих" — показываем разработчика и его проект
+  // Для "Мои отклики" — показываем владельца проекта
+  const otherUser = isMySwipe ? swipe.project?.owner : swipe.user
+  const projectTitle = swipe.project?.title
+
+  return (
+    <div className="rounded-lg border bg-card p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-start gap-4">
+        <div className="h-14 w-14 rounded-full overflow-hidden bg-primary/20 shrink-0">
+          <AvatarImage
+            fileId={otherUser?.avatar_file_id}
+            fallback={otherUser?.full_name?.[0]?.toUpperCase() || '?'}
+            className="text-xl"
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold truncate">
+            {otherUser?.full_name || 'Неизвестный пользователь'}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isMySwipe ? (
+              <>Отклик на проект: <span className="font-medium text-foreground">{projectTitle}</span></>
+            ) : (
+              <>Откликнулся на проект: <span className="font-medium text-foreground">{projectTitle}</span></>
+            )}
+          </p>
+
+          {swipe.message && (
+            <div className="mt-3 p-3 rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Сообщение:</span> {swipe.message}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>{new Date(swipe.created_at).toLocaleDateString('ru-RU')}</span>
+            </div>
+            <StatusBadge status={swipe.status} />
+          </div>
+        </div>
+      </div>
+
+      {/* Действия */}
+      <div className="flex gap-3 mt-4 pt-4 border-t">
+        {/* Кнопка Чат — доступна обоим, если есть match_id */}
+        {swipe.match_id && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate(`/matches/${swipe.match_id}/chat`)}
+            className="flex-1"
+          >
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Чат
+          </Button>
+        )}
+
+        {/* Для "Входящих" — кнопки Одобрить/Отклонить (только для pending) */}
+        {!isMySwipe && swipe.status === 'pending' && (
+          <>
+            <Button
+              size="sm"
+              onClick={() => onReview(swipe.id, 'approved')}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Одобрить
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onReview(swipe.id, 'rejected')}
+              className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Отклонить
+            </Button>
+          </>
+        )}
+
+        {/* Для "Моих откликов" — только статус */}
+        {isMySwipe && (
+          <div className="flex-1 flex items-center justify-end">
+            <StatusBadge status={swipe.status} large />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Компонент бейджа статуса
+function StatusBadge({ status, large = false }: { status: string; large?: boolean }) {
+  const config: Record<string, { label: string; className: string }> = {
+    pending: {
+      label: 'На рассмотрении',
+      className: 'bg-amber-100 text-amber-800',
+    },
+    approved: {
+      label: 'Одобрено',
+      className: 'bg-green-100 text-green-800',
+    },
+    rejected: {
+      label: 'Отклонено',
+      className: 'bg-red-100 text-red-800',
+    },
+    withdrawn: {
+      label: 'Отозвано',
+      className: 'bg-gray-100 text-gray-800',
+    },
+  }
+
+  const { label, className } = config[status] || config.pending
+
+  return (
+    <span className={`px-2 py-1 rounded-full font-medium ${className} ${large ? 'text-sm' : 'text-xs'}`}>
+      {label}
+    </span>
   )
 }

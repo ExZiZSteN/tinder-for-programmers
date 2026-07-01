@@ -1,32 +1,34 @@
 import { apiClient } from './client'
-
-export interface Message {
-  id: number
-  match_id: number
-  sender_id: number
-  content: string
-  created_at: string
-}
+import type { Message } from '@/types/chat'
 
 export const chatApi = {
-  // Получить историю сообщений матча
+
   getMessages: async (
     matchId: number,
-    offset: number = 0,
+    beforeId?: number, 
     limit: number = 50
   ): Promise<Message[]> => {
-    const response = await apiClient.get(`/matches/${matchId}/messages`, {
-      params: { offset, limit },
+    const params: Record<string, any> = { limit }
+    if (beforeId) {
+      params.before_id = beforeId
+    }
+
+    const response = await apiClient.get(`/chat/${matchId}/history`, {
+      params,
     })
     return response.data
   },
 
-  // ⚠️ Отправка сообщений пока не реализована на backend
-  // Нужно добавить POST /matches/{match_id}/messages
   sendMessage: async (matchId: number, content: string): Promise<Message> => {
-    const response = await apiClient.post(`/matches/${matchId}/messages`, {
+    const response = await apiClient.post(`/chat/${matchId}/messages`, {
       content,
     })
     return response.data
   },
+
+  markAsRead: async (matchId: number): Promise<{ read_count: number }> => {
+    const response = await apiClient.post(`/chat/${matchId}/read`)
+    return response.data
+  },
 }
+
