@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
+from app.models.user_skill import UserSkill
+from app.models.skill import Skill
 from app.schemas.user import (
     PublicUserResponse,
     UserResponse,
@@ -51,6 +55,38 @@ async def get_user(
 ):
     service = UserService(db)
     return await service.get_user_by_id(user_id)
+
+@router.get("/{user_id}/public")
+async def get_public_profile(
+        user_id: int,
+        db: AsyncSession = Depends(get_db),
+    ):
+    """Публичный профиль пользователя (без email и пароля)."""
+    result = await db.execute(
+        select(User)
+        .options(
+            selectinload(User.user_skills).selectinload(UserSkill.skill)
+        )
+        .where(User.id == user_id, User.is_active == True)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": user.id,
+        "full_name": user.full_name,
+        "bio": user.bio,
+        "github_url": user.github_url,
+        "linkedin_url": user.linkedin_url,
+        "portfolio_url": user.portfolio_url,
+        "experience_years": user.experience_years,
+        "avatar_file_id": user.avatar_file_id,
+        "created_at": user.created_at,
+        "skills": [
+            {"id": us.skill.id, "name": us.skill.name}
+            for us in user.user_skills
+        ],
+    }
 
 @router.post("/me/avatar", response_model=UserResponse)
 async def set_avatar(

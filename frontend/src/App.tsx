@@ -13,6 +13,8 @@ import MatchesPage from './pages/MatchesPage'
 import FeedPage from './pages/FeedPage'
 import InboxPage from './pages/InboxPage'
 import ChatPage from './pages/ChatPage'
+import ProjectChatPage from './pages/ProjectChatPage'
+import PublicProfilePage from './pages/PublicProfilePage'
 
 // Protected Route
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -64,6 +66,14 @@ function App() {
           }
         />
         <Route
+          path="/users/:id"
+          element={
+            <ProtectedRoute>
+              <PublicProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/projects"
           element={
             <ProtectedRoute>
@@ -108,6 +118,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/projects/:projectId/chat"
+          element={
+            <ProtectedRoute>
+              <ProjectChatPage />
             </ProtectedRoute>
           }
         />

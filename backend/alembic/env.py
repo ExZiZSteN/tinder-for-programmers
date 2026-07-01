@@ -36,6 +36,7 @@ from app.models.message import Message
 from app.models.notification import Notification
 from app.models.refresh_token import RefreshToken
 from app.models.file import File
+from app.models.project_message import ProjectMessage
 
 # Конфиг Alembic
 config = context.config

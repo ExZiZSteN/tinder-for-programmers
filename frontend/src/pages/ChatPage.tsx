@@ -10,6 +10,7 @@ export default function ChatPage() {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const [inputText, setInputText] = useState('')
+  
 
   const currentUserId = user?.id || 0
   const parsedMatchId = Number(matchId)
@@ -51,7 +52,7 @@ export default function ChatPage() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h2 className="text-lg font-semibold">Диалог #{matchId}</h2>
+          <h2 className="text-lg font-semibold">Диалог с {user?.full_name}</h2>
         </div>
 
         <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full">
