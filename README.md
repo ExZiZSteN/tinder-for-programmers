@@ -39,6 +39,7 @@ docker compose run --rm backend alembic upgrade head
 docker compose cp scripts/seed_skills.py backend:app/scripts/seed_skill.py
 docker compose exec backend python scripts/seed_skills.py # наполнение навыков
 docker compose exec db psql -U postgres -d tinder_devs
+
 -- Конвертируем swipes
 UPDATE swipes 
 SET status = LOWER(status::text)::swipe_status;
@@ -51,6 +52,7 @@ SET status = LOWER(status::text)::match_status;
 SELECT DISTINCT status FROM swipes;
 SELECT DISTINCT status FROM matches;
 \q
+
 docker compose restart backend
 
 ```
