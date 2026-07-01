@@ -129,7 +129,7 @@ export default function FeedPage() {
           </Button>
           <Button variant="outline" size="lg" onClick={() => navigate('/matches')}>
             <MessageCircle className="h-4 w-4 mr-2" />
-            Мои матчи
+            Мои мэтчи
           </Button>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function FeedPage() {
         </div>
         <Button variant="outline" onClick={() => navigate('/matches')}>
           <MessageCircle className="h-4 w-4 mr-2" />
-          Матчи
+          Мэтчи
         </Button>
       </div>
 
