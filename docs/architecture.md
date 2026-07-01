@@ -1415,12 +1415,4 @@ deploy:
     ./scripts/deploy.sh
 ```
 
----
 
-**Конец документа**
-
-Если нужно — могу:
-- Добавить раздел про мониторинг (Prometheus + Grafana)
-- Описать стратегию миграции на микросервисы
-- Добавить C4-диаграммы (Context, Container, Component, Code)
-- Расписать конкретные deployment-стратегии (blue-green, canary)
