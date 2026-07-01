@@ -71,6 +71,13 @@ class MatchRepository(BaseRepository[Match]):
     async def get_by_id(self, match_id: int) -> Match | None:
         return await self.get_with_project(match_id)
 
+    async def get_by_swipe_id(self, swipe_id: int) -> Match | None:
+        """Находит match по ID свайпа."""
+        result = await self.db.execute(
+            select(Match).where(Match.swipe_id == swipe_id)
+        )
+        return result.scalar_one_or_none()
+
     async def is_participant(self, match_id: int, user_id: int) -> bool:
         result = await self.db.execute(
             select(Match)

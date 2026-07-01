@@ -3,7 +3,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { adminApi, type AdminStats, type AdminUser } from '@/api/admin'
+import { adminApi } from '@/api/admin'
+import type { AdminStats, AdminUser } from '@/types/admin'
 import {
   Users,
   FolderKanban,
@@ -419,11 +420,20 @@ function SkillsTab() {
   const [isLoading, setIsLoading] = useState(true)
   const [newSkillName, setNewSkillName] = useState('')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [search])
 
   useEffect(() => {
     loadSkills()
-  }, [])
-
+  }, [debouncedSearch])
+  
   const loadSkills = async () => {
     try {
       setIsLoading(true)

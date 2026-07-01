@@ -3,10 +3,11 @@ export interface Notification {
   user_id: number
   type: 'match' | 'swipe_approved' | 'swipe_rejected' | 'system'
   title: string
-  message: string
+  body: string | null
+  payload?: Record<string, any>
   is_read: boolean
+  read_at: string | null
   created_at: string
-  // Опционально: связанные сущности, если бэкенд их возвращает
   related_project_id?: number
   related_user_id?: number
 }

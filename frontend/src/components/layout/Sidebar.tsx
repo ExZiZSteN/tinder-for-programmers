@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { cn } from '@/utils/cn'
 import { authApi } from '@/api/auth'
+import { NotificationBell } from '../ui/NotificationBell'
 import {
   Heart,
   MessageCircle,
@@ -114,6 +115,7 @@ export function Sidebar() {
               <p className="text-sm font-medium truncate">{user.full_name}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
+            <NotificationBell />
           </div>
         )}
         <button

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-
+from typing import Optional, Sequence
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,7 +38,7 @@ class NotificationService:
         )
 
     async def mark_read(self, user: User, notification_id: int) -> NotificationResponse:
-        notification = self.notif_repo.mark_read(notification_id, user.id)
+        notification = await self.notif_repo.mark_read(notification_id, user.id)
         if not notification:
             raise NotFoundException("Notification")
         await self.db.commit()
@@ -52,7 +52,7 @@ class NotificationService:
         title: str,
         body: str | None = None,
         payload: dict | None = None,
-    ) -> NotificationResponse:
+    ) -> Notification:
         notification = Notification(
             user_id=user_id,
             type=type,
@@ -62,17 +62,18 @@ class NotificationService:
         )
         self.db.add(notification)
         await self.db.flush()
-        try:
-            await notification_manager.send_to_user(
-                user_id,
-                {
-                    "type": type,
-                    "payload": payload or {},
-                    "created_at": notification.created_at.isoformat() if notification.created_at else None,
-                },
-            )
-        except Exception:
-            pass
-        await self.db.commit()
-        await self.db.refresh(notification)
-        return NotificationResponse.model_validate(notification)
+
+        await notification_manager.send_to_user(
+            user_id,
+            {
+                "type": "notification",
+                "id": notification.id,
+                "title": title,
+                "body": body,
+                "payload": payload,
+                "created_at": notification.created_at.isoformat(),
+            }
+        )
+
+        return notification
+
