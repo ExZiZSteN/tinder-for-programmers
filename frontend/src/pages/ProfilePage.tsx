@@ -350,13 +350,26 @@ function SkillSelector({ selectedSkills, onSkillsChange }: { selectedSkills: Ski
   }
 
   const handleCreateSkill = async () => {
-    if (!searchQuery.trim()) return
+    const name = searchQuery.trim()
+    if (!name) return
 
     try {
-      const newSkill = await skillsApi.create(searchQuery.trim())
+      setIsSearching(true)
+      const newSkill = await skillsApi.create(name)
       handleAddSkill(newSkill)
+      toast.success(`Навык "${name}" создан`)
     } catch (error: any) {
       console.error('Ошибка создания навыка:', error)
+
+      // Достаём сообщение об ошибке
+      const detail = error.response?.data?.detail
+      const message = typeof detail === 'string' 
+        ? detail 
+        : `Не удалось создать навык "${name}"`
+
+      toast.error(message)
+    } finally {
+      setIsSearching(false)
     }
   }
 
@@ -409,6 +422,7 @@ function SkillSelector({ selectedSkills, onSkillsChange }: { selectedSkills: Ski
           size="sm"
           variant="outline"
           onClick={handleCreateSkill}
+          disabled={isSearching}
           className="w-full"
         >
           + Создать навык "{searchQuery}"

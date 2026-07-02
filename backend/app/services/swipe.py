@@ -49,9 +49,6 @@ class SwipeService:
         match.status = MatchStatus.PENDING
         await self.db.flush()
 
-        swipe.match_id = match.id
-        await self.db.flush()
-
         notif = NotificationService(self.db)
         await notif.create(
             user_id=project.owner_id,

@@ -8,6 +8,7 @@ from app.models.skill import Skill
 from app.models.match import Match
 from app.schemas.admin import AdminUserResponse, AdminStatsResponse
 from app.schemas.project import ProjectResponse
+from app.core.redis import cache_get, cache_set, cache_delete, CacheKeys
 
 router = APIRouter()
 
@@ -16,6 +17,11 @@ async def get_stats(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
+    cache_key = CacheKeys.ADMIN_STATS
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     total_users = await db.scalar(select(func.count(User.id)))
     total_projects = await db.scalar(select(func.count(Project.id)))
     total_matches = await db.scalar(select(func.count(Match.id)))
@@ -23,7 +29,7 @@ async def get_stats(
     banned_users = await db.scalar(select(func.count(User.id)).where(User.is_banned == True))
     active_projects = await db.scalar(select(func.count(Project.id)).where(Project.status == "open"))
     
-    return {
+    data = {
         "total_users": total_users or 0,
         "total_projects": total_projects or 0,
         "total_matches": total_matches or 0,
@@ -31,6 +37,9 @@ async def get_stats(
         "banned_users": banned_users or 0,
         "active_projects": active_projects or 0,
     }
+    await cache_set(cache_key, data, ttl=30)
+    return data
+
 
 @router.get("/users")
 async def list_users(
@@ -164,6 +173,15 @@ async def list_skills(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
+    should_cache = not search and offset == 0 and limit == 100
+    
+    if should_cache:
+        cache_key = CacheKeys.SKILLS_LIST
+        cached = await cache_get(cache_key)
+        if cached is not None:
+            return cached
+    
+
     query = select(Skill)
     if search:
         query = query.where(Skill.name.ilike(f"%{search}%"))
@@ -174,10 +192,16 @@ async def list_skills(
     
     total = await db.scalar(select(func.count(Skill.id)))
     
-    return {
+    data = {
         "skills": [{"id": s.id, "name": s.name} for s in skills],
         "total": total or 0,
     }
+    
+    if should_cache:
+        await cache_set(cache_key, data, ttl=600)  # 10 минут
+    
+    return data
+
 
 @router.post("/skills")
 async def create_skill(
@@ -193,8 +217,11 @@ async def create_skill(
     db.add(skill)
     await db.commit()
     await db.refresh(skill)
+
+    await cache_delete(CacheKeys.SKILLS_LIST)
     
     return {"id": skill.id, "name": skill.name}
+
 
 @router.delete("/skills/{skill_id}")
 async def delete_skill(
@@ -208,5 +235,7 @@ async def delete_skill(
     
     await db.delete(skill)
     await db.commit()
+    
+    await cache_delete(CacheKeys.SKILLS_LIST)
     
     return {"message": "Skill deleted"}

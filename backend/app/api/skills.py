@@ -5,6 +5,7 @@ from app.core.deps import get_db, get_current_user
 from app.models.user import User
 from app.repositories.skill import SkillRepository
 from app.schemas.user import SkillResponse
+from app.schemas.skill import CreateSkillRequest
 
 router = APIRouter()
 
@@ -31,11 +32,13 @@ async def popular_skills(
     return await repo.get_popular(limit=limit)
 
 @router.post("", response_model=SkillResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post("", response_model=SkillResponse, status_code=status.HTTP_201_CREATED)
 async def create_skill(
-    name: str = Query(min_length=1, max_length=100, description="Название навыка"),
+    body: CreateSkillRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     repo = SkillRepository(db)
-    skill = await repo.find_or_create(name)
+    skill = await repo.find_or_create(body.name)
     return SkillResponse.model_validate(skill)

@@ -5,6 +5,7 @@ from app.core.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.project import ProjectResponse
 from app.services.recommendation import RecommendationService
+from app.core.redis import cache_get, cache_set, CacheKeys
 
 router = APIRouter()
 
@@ -16,5 +17,15 @@ async def get_feed(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    cache_key = CacheKeys.feed(limit, offset)
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     service = RecommendationService(db)
-    return await service.get_feed(user, offset=offset, limit=limit)
+    projects = await service.get_feed(user, offset=offset, limit=limit)
+
+    data = [p.model_dump(mode="json") for p in projects]
+    
+    await cache_set(cache_key, data, ttl=60)
+    
+    return data
