@@ -18,8 +18,8 @@ async def list_notifications(
     return await service.list(user)
 
 
-@router.patch("/{notification_id}/read", response_model=NotificationResponse)
-async def mark_read(
+@router.post("/{notification_id}/read")
+async def mark_as_read(
     notification_id: int,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
