@@ -10,7 +10,7 @@ from app.models.user import User
 from app.repositories.base import BaseRepository
 from app.repositories.notification import NotificationRepository
 from app.schemas.notification import NotificationListResponse, NotificationResponse
-
+from app.core.redis import cache_get, cache_set, cache_delete, CacheKeys
 
 class NotificationService:
     def __init__(self, db: AsyncSession):
@@ -19,23 +19,33 @@ class NotificationService:
         self.db = db
 
     async def list(self, user: User) -> NotificationListResponse:
+        key = CacheKeys.notifications(user.id)
+    
+        cached = await cache_get(key)
+        if cached:
+            return NotificationListResponse.model_validate(cached)
+    
         result = await self.db.execute(
             select(Notification)
             .where(Notification.user_id == user.id)
             .order_by(Notification.created_at.desc())
         )
-        notifications = list(result.scalars().all())
-
-        count_result = await self.db.execute(
-            select(func.count(Notification.id))
-            .where(Notification.user_id == user.id, Notification.is_read == False)
+    
+        notifications = result.scalars().all()
+    
+        unread = sum(1 for n in notifications if not n.is_read)
+    
+        response = NotificationListResponse(
+            notifications=[
+                NotificationResponse.model_validate(n)
+                for n in notifications
+            ],
+            unread_count=unread,
         )
-        unread_count = count_result.scalar() or 0
-
-        return NotificationListResponse(
-            notifications=[NotificationResponse.model_validate(n) for n in notifications],
-            unread_count=unread_count,
-        )
+    
+        await cache_set(key, response, ttl=10)
+    
+        return response
 
     async def mark_read(self, user: User, notification_id: int) -> NotificationResponse:
         notification = await self.notif_repo.mark_read(notification_id, user.id)
@@ -43,6 +53,7 @@ class NotificationService:
             raise NotFoundException("Notification")
         await self.db.commit()
         await self.db.refresh(notification)
+        await cache_delete(CacheKeys.unread_count(user.id))
         return NotificationResponse.model_validate(notification)
 
     async def create(
@@ -75,5 +86,6 @@ class NotificationService:
             }
         )
 
+        await cache_delete(CacheKeys.unread_count(user_id))
         return notification
 

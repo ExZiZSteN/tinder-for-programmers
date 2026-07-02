@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.core.redis import cache_delete_pattern, cache_delete, CacheKeys
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.project import (
@@ -68,6 +68,7 @@ async def create_project(
     db: AsyncSession = Depends(get_db),
 ):
     service = ProjectService(db)
+    await cache_delete_pattern(CacheKeys.FEED_ALL)
     return await service.create(user, body)
 
 
@@ -88,6 +89,8 @@ async def update_project(
     db: AsyncSession = Depends(get_db),
 ):
     service = ProjectService(db)
+    await cache_delete_pattern(CacheKeys.FEED_ALL)
+    await cache_delete(CacheKeys.public_profile(user.id))
     return await service.update(user, project_id, body)
 
 
@@ -98,6 +101,7 @@ async def delete_project(
     db: AsyncSession = Depends(get_db),
 ):
     service = ProjectService(db)
+    await cache_delete_pattern(CacheKeys.FEED_ALL)
     await service.delete(user, project_id)
 
 @router.post("/{project_id}/restore", response_model=ProjectResponse)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
+from app.core.redis import cache_get, cache_set, cache_delete, CacheKeys
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.user_skill import UserSkill
@@ -62,6 +62,11 @@ async def get_public_profile(
         db: AsyncSession = Depends(get_db),
     ):
     """Публичный профиль пользователя (без email и пароля)."""
+    cache_key = CacheKeys.public_profile(user_id)
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+    
     result = await db.execute(
         select(User)
         .options(
@@ -72,7 +77,7 @@ async def get_public_profile(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return {
+    data = {
         "id": user.id,
         "full_name": user.full_name,
         "bio": user.bio,
@@ -87,6 +92,9 @@ async def get_public_profile(
             for us in user.user_skills
         ],
     }
+
+    await cache_set(cache_key, data, ttl=300)
+    return data
 
 @router.post("/me/avatar", response_model=UserResponse)
 async def set_avatar(

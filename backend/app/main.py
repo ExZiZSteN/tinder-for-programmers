@@ -12,6 +12,7 @@ from app.api.ws_notifications import handle_notifications_ws
 from app.api.ws_project_chat import handle_project_chat_ws
 from app.core.config import settings
 from app.core.database import engine
+from app.core.redis import init_redis, close_redis
 from app.core.minio_client import init_minio_bucket
 from app.models.base import Base  # noqa: F401 - ensures all models are loaded
 
@@ -21,10 +22,13 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         # await conn.run_sync(Base.metadata.create_all)
-    await init_minio_bucket()
+        await init_minio_bucket()
+    
+    await init_redis()
 
     await create_default_admin()
     yield
+    await close_redis()
     await engine.dispose()
 
 setup_logging()
