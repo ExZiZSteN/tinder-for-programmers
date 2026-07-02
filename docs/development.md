@@ -1,8 +1,8 @@
 # Руководство разработчика
 
-##  Структура проекта
+## Структура проекта
 
-```
+```text
 tinder-for-programmers/
 ├── backend/              # FastAPI backend
 │   ├── app/
@@ -36,125 +36,196 @@ tinder-for-programmers/
 └── Makefile
 ```
 
-##  Архитектурные принципы
+---
 
-### Слоистая архитектура backend
+# Архитектурные принципы
 
+## Слоистая архитектура Backend
+
+```text
+Request
+    │
+    ▼
+Router (api/)
+    │
+    ▼
+Service (services/)
+    │
+    ▼
+Repository (repositories/)
+    │
+    ▼
+Database
+
+        │
+        ▼
+Pydantic Schemas (schemas/)
 ```
-Request → Router (api/) → Service (services/) → Repository (repositories/) → DB
-                ↓
-            Pydantic-схемы (schemas/)
-```
 
-**Правила:**
-- Router — только валидация и вызов сервиса, без бизнес-логики
-- Service — бизнес-логика, оркестрация, транзакции
-- Repository — только SQL-запросы, никакого бизнес-контекста
-- Model — только описание таблицы, без логики
+### Правила взаимодействия слоев
 
-### Пример: создание свайпа
+- **Router** — отвечает только за валидацию данных, авторизацию и вызов сервиса. Бизнес-логика отсутствует.
+- **Service** — содержит бизнес-логику, оркестрацию подсистем и управление транзакциями.
+- **Repository** — инкапсулирует SQL-запросы и не содержит бизнес-контекста.
+- **Model** — описывает структуру таблиц базы данных без внутренней логики.
+
+---
+
+## Пример: создание свайпа
+
+### Router
 
 ```python
-# app/api/swipes.py — тонкий контроллер
-@router.post('/', status_code=201)
+# app/api/swipes.py
+
+@router.post("/", status_code=201)
 async def create_swipe(
     data: SwipeCreate,
-    user = Depends(get_current_user),
-    service: SwipeService = Depends(get_swipe_service)
+    user=Depends(get_current_user),
+    service: SwipeService = Depends(get_swipe_service),
 ):
     return await service.create_swipe(user.id, data)
+```
 
-# app/services/swipe.py — бизнес-логика
+### Service
+
+```python
+# app/services/swipe.py
+
 class SwipeService:
     async def create_swipe(self, user_id: int, data: SwipeCreate):
         # 1. Проверить, что проект существует и открыт
         project = await self.project_repo.get(data.project_id)
-        if project.status != 'open':
-            raise BadRequestException('Project not open')
-        
-        # 2. Нельзя свайпать свой проект
-        if project.owner_id == user_id:
-            raise ForbiddenException('Cannot swipe own project')
-        
-        # 3. Создать свайп
-        swipe = await self.swipe_repo.create(user_id=user_id, ...)
-        
-        # 4. Уведомить владельца
-        await self.notif_service.notify_new_swipe(project.owner_id, swipe)
-        
-        return swipe
+        if project.status != "open":
+            raise BadRequestException("Project not open")
 
-# app/repositories/swipe.py — работа с БД
-class SwipeRepository:
-    async def create(self, user_id: int, project_id: int, ...) -> Swipe:
-        swipe = Swipe(user_id=user_id, project_id=project_id, ...)
-        self.db.add(swipe)
-        await self.db.commit()
+        # 2. Нельзя свайпать собственный проект
+        if project.owner_id == user_id:
+            raise ForbiddenException("Cannot swipe own project")
+
+        # 3. Создать запись свайпа
+        swipe = await self.swipe_repo.create(
+            user_id=user_id,
+            ...
+        )
+
+        # 4. Отправить уведомление владельцу проекта
+        await self.notif_service.notify_new_swipe(project.owner_id, swipe)
+
         return swipe
 ```
 
-##  Dependency Injection
+### Repository
 
-FastAPI использует `Depends` для внедрения зависимостей:
+```python
+# app/repositories/swipe.py
+
+class SwipeRepository:
+    async def create(
+        self,
+        user_id: int,
+        project_id: int,
+        ...
+    ) -> Swipe:
+        swipe = Swipe(
+            user_id=user_id,
+            project_id=project_id,
+            ...
+        )
+
+        self.db.add(swipe)
+        await self.db.commit()
+
+        return swipe
+```
+
+---
+
+# Dependency Injection
+
+Внедрение зависимостей в FastAPI реализуется через механизм `Depends`.
 
 ```python
 # app/core/deps.py
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
 
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> User:
     payload = decode_token(token)
-    user = await db.get(User, payload['sub'])
+
+    user = await db.get(User, payload["sub"])
+
     if not user or user.is_banned:
-        raise HTTPException(401, 'Invalid token')
+        raise HTTPException(401, "Invalid token")
+
     return user
 
-def get_swipe_service(db: AsyncSession = Depends(get_db)) -> SwipeService:
+
+def get_swipe_service(
+    db: AsyncSession = Depends(get_db),
+) -> SwipeService:
     return SwipeService(
         swipe_repo=SwipeRepository(db),
         project_repo=ProjectRepository(db),
-        notif_service=NotificationService(db)
+        notif_service=NotificationService(db),
     )
 ```
 
-##  Работа с БД
+---
 
-### Миграции
+# Работа с базой данных
+
+## Миграции
 
 ```bash
-# Создать миграцию после изменения моделей
+# Создать новую миграцию
 make migrate-create msg="add new field"
 
-# Применить миграции
+# Применить все миграции
 make migrate
 
 # Откатить последнюю миграцию
 docker compose exec backend alembic downgrade -1
 ```
 
-### Добавление новой таблицы
+## Алгоритм добавления новой таблицы
 
-1. Создать модель в `app/models/`
-2. Импортировать в `app/models/__init__.py`
-3. Создать миграцию: `make migrate-create msg="add X table"`
-4. Применить: `make migrate`
-5. Создать repository в `app/repositories/`
-6. Создать service в `app/services/`
-7. Создать router в `app/api/`
-8. Подключить router в `app/api/router.py`
+1. Создать модель в `app/models/`.
+2. Импортировать модель в `app/models/__init__.py`.
+3. Создать автомиграцию:
 
-##  Frontend-соглашения
+   ```bash
+   make migrate-create msg="add X table"
+   ```
 
-### Структура компонента
+4. Применить миграции:
 
-```typescript
+   ```bash
+   make migrate
+   ```
+
+5. Создать Repository в `app/repositories/`.
+6. Создать Service в `app/services/`.
+7. Создать Router в `app/api/`.
+8. Подключить роутер в `app/api/router.py`.
+
+---
+
+# Frontend-соглашения
+
+## Структура UI-компонента
+
+```tsx
 // components/feed/FeedCard.tsx
-import { FC } from 'react';
-import { cn } from '@/utils/cn';
+
+import { FC } from "react";
+import { cn } from "@/utils/cn";
 
 interface FeedCardProps {
   project: Project;
@@ -162,110 +233,142 @@ interface FeedCardProps {
   onPass: () => void;
 }
 
-export const FeedCard: FC<FeedCardProps> = ({ project, onLike, onPass }) => {
+export const FeedCard: FC<FeedCardProps> = ({
+  project,
+  onLike,
+  onPass,
+}) => {
   return (
-    <div className={cn('bg-white rounded-lg shadow p-6')}>
-      {/* ... */}
+    <div className={cn("bg-white rounded-lg shadow p-6")}>
+      {/* Контент компонента */}
     </div>
   );
 };
 ```
 
-### Хуки
+---
 
-```typescript
-// hooks/useFeed.ts — data fetching
+## Кастомные хуки
+
+### Получение данных
+
+```tsx
+// hooks/useFeed.ts
+
 export const useFeed = () => {
   return useInfiniteQuery({
-    queryKey: ['feed'],
+    queryKey: ["feed"],
     queryFn: ({ pageParam }) => feedApi.getFeed(pageParam),
     getNextPageParam: (lastPage) => lastPage.next_cursor,
   });
 };
+```
 
-// hooks/useSwipe.ts — mutations
+### Изменение данных
+
+```tsx
+// hooks/useSwipe.ts
+
 export const useSwipe = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: SwipeCreate) => swipesApi.create(data),
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({
+        queryKey: ["feed"],
+      });
     },
   });
 };
 ```
 
-### State management
+---
 
-- **Server state** (данные с backend) → TanStack Query
-- **Client state** (auth, UI) → Zustand
-- **Form state** → React Hook Form + Zod
-- **URL state** → React Router
+# Управление состоянием
 
-##  Локальная разработка
+| Тип состояния | Инструмент |
+|---------------|------------|
+| Server State | TanStack Query |
+| Client State | Zustand |
+| Form State | React Hook Form + Zod |
+| URL State | React Router |
 
-### Backend
+---
+
+# Локальная разработка
+
+## Backend
 
 ```bash
 # Запустить backend с hot reload
 docker compose exec backend uvicorn app.main:app --reload --host 0.0.0.0
 
-# Войти в контейнер
+# Открыть bash внутри контейнера
 docker compose exec backend bash
 
-# Запустить pytest
+# Запустить тесты
 docker compose exec backend pytest -v
 ```
 
-### Frontend
+## Frontend
 
 ```bash
-# Запустить frontend с hot reload
+# Запустить dev-сервер
 docker compose exec frontend npm run dev
 
 # Проверить типы
 docker compose exec frontend npm run type-check
 
-# Проверить lint
+# Проверить линтер
 docker compose exec frontend npm run lint
 ```
 
-##  Стиль кода
+---
 
-### Python
+# Стиль кода
 
-- **Line length:** 100 символов
-- **Formatter:** ruff
-- **Type hints:** обязательны для всех публичных функций
-- **Docstrings:** Google-style для публичных API
+## Python
 
-### TypeScript
+- Максимальная длина строки — **100 символов**.
+- Форматирование и линтинг — **ruff**.
+- Аннотации типов обязательны.
+- Документирование — **Google-style docstrings**.
 
-- **Strict mode:** включён
-- **Formatter:** Prettier
-- **Lint:** ESLint с recommended rules
-- **Именование:** PascalCase для компонентов, camelCase для функций/переменных
+## TypeScript
 
-##  Git Workflow
+- Используется **strict mode**.
+- Форматирование — **Prettier**.
+- Линтинг — **ESLint**.
+- Именование:
+  - **PascalCase** — компоненты.
+  - **camelCase** — функции, методы и переменные.
+
+---
+
+# Git Workflow
 
 ```bash
-# 1. Создать ветку от main
+# 1. Создать новую ветку
 git checkout -b feat/swipe-animations
 
-# 2. Коммиты в conventional commits формате
+# 2. Сделать коммит
 git commit -m "feat(swipe): add animation on like"
 git commit -m "fix(chat): fix message ordering"
 git commit -m "docs(api): update endpoints description"
 
-# 3. Push и создать PR
+# 3. Отправить изменения
 git push origin feat/swipe-animations
 ```
 
-**Формат коммитов:**
-- `feat:` — новая функциональность
-- `fix:` — исправление бага
-- `docs:` — документация
-- `refactor:` — рефакторинг
-- `test:` — тесты
-- `chore:` — инфраструктура, зависимости
+## Допустимые типы коммитов
+
+| Тип | Назначение |
+|------|------------|
+| `feat:` | Новая функциональность |
+| `fix:` | Исправление ошибок |
+| `docs:` | Изменения документации |
+| `refactor:` | Рефакторинг без изменения логики |
+| `test:` | Добавление или изменение тестов |
+| `chore:` | Конфигурация, зависимости, инфраструктура |
