@@ -13,6 +13,6 @@ export interface Notification {
 }
 
 export interface NotificationListResponse {
-  items: Notification[]
+  notifications: Notification[]
   unread_count: number
 }

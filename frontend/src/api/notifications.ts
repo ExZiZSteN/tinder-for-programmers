@@ -10,7 +10,7 @@ export const notificationsApi = {
 
   // Отметить уведомление как прочитанное
   markAsRead: async (notificationId: number): Promise<Notification> => {
-    const response = await apiClient.post(`/notifications/${notificationId}/read`)
+    const response = await apiClient.patch(`/notifications/${notificationId}/read`)
     return response.data
   },
 }
