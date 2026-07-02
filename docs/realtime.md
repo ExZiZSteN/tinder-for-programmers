@@ -1,93 +1,105 @@
-# Realtime — WebSocket
+# Модуль Realtime-коммуникаций (WebSockets)
 
-##  Назначение
+## Назначение подсистемы
 
-Realtime-коммуникации используются для:
-- Чата между участниками матча
-- Доставки уведомлений в реальном времени
+Постоянные двусторонние WebSocket-соединения используются для решения двух ключевых задач:
 
-##  WebSocket Endpoints
+1. **Интерактивные чаты** — мгновенный обмен сообщениями между участниками подтвержденных матчей.
+2. **Push-уведомления** — доставка системных уведомлений клиенту в режиме реального времени.
 
-### Chat
+---
 
-```
-ws://localhost:8000/ws/chat/{match_id}?token=<jwt>
-```
+# WebSocket-эндпоинты
 
-**Аутентификация:** через query-параметр `token` (JWT)
+## 1. Комната чата
 
-**Проверки при подключении:**
-1. JWT валиден
-2. Пользователь — участник матча (user_id в match)
-3. Матч в статусе `active`
-
-### Notifications
-
-```
-ws://localhost:8000/ws/notifications?token=<jwt>
+```text
+ws://localhost:8000/api/v1/ws/chat/{match_id}?token=<jwt_access_token>
 ```
 
-Доставляет уведомления пользователю в реальном времени.
+### Аутентификация
 
-##  Архитектура
+Используется **JWT Access Token**, передаваемый через query-параметр `token`.
 
+### Проверки при подключении
+
+- Проверка валидности и срока действия JWT.
+- Проверка, что пользователь является участником матча (`developer` или `project owner`).
+- Проверка, что матч находится в статусе **active**.
+
+---
+
+## 2. Поток персональных уведомлений
+
+```text
+ws://localhost:8000/api/v1/ws/notifications?token=<jwt_access_token>
 ```
+
+---
+
+# Архитектура
+
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
 │   Client A                       Client B                   │
-│      │                               │                      │
-│      │ WebSocket                     │ WebSocket            │
-│      └──────────────┬────────────────┘                      │
+│      │                              │                       │
+│      │ WebSocket                    │ WebSocket             │
+│      └──────────────┬───────────────┘                       │
 │                     ▼                                       │
-│        ┌──────────────────────────┐                        │
-│        │ FastAPI WebSocket Handler│                        │
-│        └──────────────┬───────────┘                        │
+│        ┌──────────────────────────┐                         │
+│        │ FastAPI WebSocket Handler│                         │
+│        └──────────────┬───────────┘                         │
 │                       ▼                                     │
-│        ┌──────────────────────────┐                        │
-│        │ ConnectionManager        │                        │
-│        │ match_id → {user_id→ws}  │                        │
-│        └──────────────┬───────────┘                        │
+│        ┌──────────────────────────┐                         │
+│        │ ConnectionManager        │                         │
+│        │ match_id → {user_id→ws}  │                         │
+│        └──────────────┬───────────┘                         │
 │                       ▼                                     │
-│        ┌──────────────────────────┐                        │
-│        │ Redis Pub/Sub            │                        │
-│        │ channel: chat:{match_id} │                        │
-│        └──────────────────────────┘                        │
+│        ┌──────────────────────────┐                         │
+│        │ Redis Pub/Sub            │                         │
+│        │ channel: chat:{match_id} │                         │
+│        └──────────────────────────┘                         │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Зачем Redis Pub/Sub:**
-- Поддержка нескольких инстансов backend (horizontal scaling)
-- Сообщение от Client A на инстансе 1 должно дойти до Client B на инстансе 2
+## Назначение Redis Pub/Sub
 
-##  Протокол чата
+Redis Pub/Sub обеспечивает **горизонтальное масштабирование** приложения.
 
-### Отправка сообщения
+Если backend работает на нескольких инстансах за балансировщиком нагрузки, Redis выступает общей шиной сообщений и гарантирует доставку данных между пользователями независимо от того, к какому экземпляру FastAPI они подключены.
+
+---
+
+# Протокол обмена сообщениями (JSON)
+
+## Модуль "Чат"
+
+### Отправка сообщения (Client → Server)
 
 ```json
-// Client → Server
 {
   "type": "message",
-  "content": "Привет!"
+  "content": "Привет! Готов обсудить архитектуру вашего RAG-пайплайна."
 }
 ```
 
-### Получение сообщения
+### Получение сообщения (Server → Client)
 
 ```json
-// Server → Client
 {
   "type": "message",
   "id": 42,
   "match_id": 7,
   "sender_id": 3,
   "sender_name": "John Doe",
-  "content": "Привет!",
+  "content": "Привет! Готов обсудить архитектуру вашего RAG-пайплайна.",
   "created_at": "2026-06-24T10:15:30Z"
 }
 ```
 
-### Системные сообщения
+### Системное событие (Server → Client)
 
 ```json
 {
@@ -97,14 +109,18 @@ ws://localhost:8000/ws/notifications?token=<jwt>
 }
 ```
 
-## 🔔 Протокол уведомлений
+---
+
+## Модуль "Уведомления"
+
+### Получение уведомления (Server → Client)
 
 ```json
-// Server → Client
 {
   "type": "new_swipe",
   "payload": {
     "swipe_id": 42,
+    "title": "Новый отклик!",
     "developer_name": "John Doe",
     "project_title": "My Project"
   },
@@ -112,104 +128,199 @@ ws://localhost:8000/ws/notifications?token=<jwt>
 }
 ```
 
-**Типы уведомлений:**
-- `new_swipe` — новый отклик на проект
-- `swipe_approved` — отклик одобрен
-- `swipe_rejected` — отклик отклонён
-- `match_created` — создан матч
-- `new_message` — новое сообщение в чате
+### Поддерживаемые события
 
-##  Frontend-клиент
+| Событие | Описание |
+|----------|----------|
+| `new_swipe` | Новый отклик на проект |
+| `swipe_approved` | Отклик одобрен |
+| `swipe_rejected` | Отклик отклонён |
+| `match_created` | Создан новый матч |
+| `new_message` | Получено новое сообщение |
 
-### React-хук для чата
+---
 
-```typescript
-// hooks/useChat.ts
-export const useChat = (matchId: number) => {
+# Клиентская интеграция (React Hooks)
+
+## useChat
+
+Файл:
+
+```text
+src/hooks/useChat.ts
+```
+
+```tsx
+import { useState, useEffect, useRef } from "react";
+import { Message } from "@/types";
+
+export const useChat = (
+  matchId: number,
+  currentUser: { id: number },
+  getToken: () => string
+) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
-  
+
   useEffect(() => {
     const ws = new WebSocket(
-      `${WS_URL}/ws/chat/${matchId}?token=${getToken()}`
+      `ws://localhost:8000/api/v1/ws/chat/${matchId}?token=${getToken()}`
     );
+
     wsRef.current = ws;
-    
+
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
-      if (msg.type === 'message') {
-        setMessages(prev => [...prev, msg]);
+
+      if (msg.type === "message") {
+        setMessages((prev) => [...prev, msg]);
       }
     };
-    
+
     return () => ws.close();
-  }, [matchId]);
-  
+  }, [matchId, getToken]);
+
   const sendMessage = (content: string) => {
-    // Optimistic update
-    const tempMsg = {
+    if (!content.trim()) return;
+
+    // Optimistic Update
+    const tempMsg: Message = {
       id: Date.now(),
+      match_id: matchId,
       content,
       sender_id: currentUser.id,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
-    setMessages(prev => [...prev, tempMsg]);
-    
-    wsRef.current?.send(JSON.stringify({
-      type: 'message',
-      content
-    }));
+
+    setMessages((prev) => [...prev, tempMsg]);
+
+    wsRef.current?.send(
+      JSON.stringify({
+        type: "message",
+        content: content.trim(),
+      })
+    );
   };
-  
-  return { messages, sendMessage };
+
+  return {
+    messages,
+    sendMessage,
+  };
 };
 ```
 
-### React-хук для уведомлений
+---
 
-```typescript
-// hooks/useNotifications.ts
-export const useNotifications = () => {
+## useNotifications
+
+Файл:
+
+```text
+src/hooks/useNotifications.ts
+```
+
+```tsx
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Notification } from "@/types";
+
+export const useNotifications = (
+  getToken: () => string
+) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const queryClient = useQueryClient();
-  
+
   useEffect(() => {
     const ws = new WebSocket(
-      `${WS_URL}/ws/notifications?token=${getToken()}`
+      `ws://localhost:8000/api/v1/ws/notifications?token=${getToken()}`
     );
-    
+
     ws.onmessage = (event) => {
       const notif = JSON.parse(event.data);
-      setNotifications(prev => [notif, ...prev]);
-      
-      // Показать toast
-      toast.info(notif.payload.title);
-      
-      // Обновить счётчик непрочитанных
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      setNotifications((prev) => [notif, ...prev]);
+
+      // Toast
+      toast.info(
+        notif.payload.title || "Новое системное уведомление"
+      );
+
+      // Обновление кэша
+      queryClient.invalidateQueries({
+        queryKey: ["notifications"],
+      });
     };
-    
+
     return () => ws.close();
-  }, []);
-  
+  }, [queryClient, getToken]);
+
   return notifications;
 };
 ```
 
-##  Безопасность
+---
 
-- Все WS-соединения требуют JWT
-- Проверка прав на уровне handler'а (участник матча)
-- Rate limiting: 30 сообщений/сек на соединение
-- Валидация содержимого (1..4000 символов)
+# Безопасность и ограничения
 
-##  Troubleshooting
+## Защита соединений
 
-**Проблема:** сообщение не доходит до другого клиента  
-**Решение:** проверить, что оба клиента подключены к одному Redis
+- Анонимные подключения запрещены.
+- JWT валидируется во время WebSocket Handshake.
 
-**Проблема:** WS отключается  
-**Решение:** реализовать reconnect с exponential backoff на клиенте
+## Rate Limiting
 
-**Проблема:** дубликаты сообщений  
-**Решение:** использовать `id` сообщения для дедупликации на клиенте
+- Максимум **30 сообщений в секунду** на одно соединение.
+- При превышении лимита соединение закрывается сервером.
+
+## Ограничение размера сообщения
+
+Перед публикацией в Redis сообщение проходит проверку:
+
+- минимум **1 символ**;
+- максимум **4000 символов**.
+
+---
+
+# Troubleshooting
+
+## Сообщения не доходят до второго участника
+
+**Причина**
+
+FastAPI-инстансы используют разные Redis.
+
+**Решение**
+
+Убедитесь, что все экземпляры backend используют одинаковый:
+
+```env
+REDIS_URL
+```
+
+---
+
+## Периодически обрывается WebSocket
+
+**Причина**
+
+Нестабильная сеть или мобильное соединение.
+
+**Решение**
+
+Реализовать автоматическое переподключение (**Reconnection**) с использованием алгоритма **Exponential Backoff**.
+
+---
+
+## Сообщения отображаются дважды
+
+**Причина**
+
+Одновременно отображается оптимистично добавленное сообщение и подтверждение от сервера.
+
+**Решение**
+
+При рендеринге списка выполнять дедупликацию сообщений по уникальному `id`.
+**Проблема**: Дублирование сообщений на экране при отправке.
+
+Решение: Реализуйте сверку уникальных id сообщений при рендере списка на клиенте для дедупликации оптимистичных и серверных ответов.
