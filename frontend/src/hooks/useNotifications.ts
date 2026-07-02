@@ -23,7 +23,7 @@ export const useNotifications = () => {
     try {
       const data = await notificationsApi.list()
 
-      setNotifications(data?.items || [])
+      setNotifications(data?.notifications || [])
       setUnreadCount(data?.unread_count || 0)
     } catch (error) {
       console.error('Ошибка загрузки уведомлений:', error)
@@ -47,7 +47,7 @@ export const useNotifications = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        if (data.type === 'notification') {
+        if (data.type === 'notification' && data.notification) {
           setNotifications((prev) => {
             const safePrev = prev || []
             const exists = safePrev.some((n) => n.id === data.id)

@@ -78,12 +78,17 @@ class NotificationService:
             user_id,
             {
                 "type": "notification",
-                "id": notification.id,
-                "title": title,
-                "body": body,
-                "payload": payload,
-                "created_at": notification.created_at.isoformat(),
-            }
+                "notification": {
+                    "id": notification.id,
+                    "user_id": user_id,
+                    "type": type,
+                    "title": title,
+                    "body": body,
+                    "payload": payload or {},
+                    "is_read": False,
+                    "created_at": notification.created_at.isoformat(),
+                },
+            },
         )
 
         await cache_delete(CacheKeys.unread_count(user_id))
