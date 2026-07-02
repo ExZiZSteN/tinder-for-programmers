@@ -110,6 +110,10 @@ class CacheKeys:
     @staticmethod
     def public_profile(user_id: int) -> str:
         return CacheKeys.PUBLIC_PROFILE.format(user_id=user_id)
+
+    @staticmethod
+    def notifications(user_id: int) -> str:
+        return CacheKeys.NOTIFICATIONS_LIST.format(user_id=user_id)
     
     @staticmethod
     def unread_count(user_id: int) -> str:

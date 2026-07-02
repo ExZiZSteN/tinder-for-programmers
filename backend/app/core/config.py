@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     EMBEDDING_BATCH_SIZE: int = 32
     EMBEDDING_DEVICE: str = "cpu"
 
-    CORS_ORIGINS: list[str] = ["http://localhost:5173"]
+    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     # ============================================================
     # LOGGING

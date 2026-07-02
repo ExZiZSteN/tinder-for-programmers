@@ -13,7 +13,7 @@ export const skillsApi = {
   },
 
   create: async (name: string): Promise<Skill> => {
-    const response = await apiClient.post('/skills', { params: { name }})
+    const response = await apiClient.post<Skill>('/skills', { name })
     return response.data
   },
 }

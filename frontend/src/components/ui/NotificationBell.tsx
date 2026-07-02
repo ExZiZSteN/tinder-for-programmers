@@ -21,13 +21,13 @@ export function NotificationBell() {
       if (!notif.is_read) {
         markAsRead(notif.id)
       }
-    
+      const payload = notif.payload || {}
       // Переходим по payload, если есть
-      if (notif.payload?.match_id) {
-        navigate(`/matches/${notif.payload.match_id}/chat`)
+      if (payload?.match_id) {
+        navigate(`/matches/${payload.match_id}/chat`)
         setIsOpen(false)
-      } else if (notif.payload?.project_id) {
-        navigate(`/projects/${notif.payload.project_id}`)
+      } else if (payload?.project_id) {
+        navigate(`/projects/${payload.project_id}`)
         setIsOpen(false)
       }
     }

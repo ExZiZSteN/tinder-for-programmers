@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
 
 export const useNotifications = () => {
-
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState<number>(0)
   const [isConnected, setIsConnected] = useState<boolean>(false)
@@ -22,7 +21,6 @@ export const useNotifications = () => {
     if (!isAuthenticated) return
     try {
       const data = await notificationsApi.list()
-
       setNotifications(data?.notifications || [])
       setUnreadCount(data?.unread_count || 0)
     } catch (error) {
@@ -47,17 +45,26 @@ export const useNotifications = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
+        
+        // БЫЛО: if (data.type === 'notification' && data.notification)
+        // БЫЛО: data.id, data.title в корне
+        // СТАЛО: проверяем data.notification и берём поля из него
+        
         if (data.type === 'notification' && data.notification) {
+          const notif = data.notification  // ← ИСПРАВЛЕНО
+          
           setNotifications((prev) => {
             const safePrev = prev || []
-            const exists = safePrev.some((n) => n.id === data.id)
+            // ИСПРАВЛЕНО: проверяем notif.id
+            const exists = safePrev.some((n) => n.id === notif.id)
             if (exists) return safePrev
-            return [data, ...safePrev]
+            // ИСПРАВЛЕНО: добавляем notif, а не data
+            return [notif, ...safePrev]
           })
           setUnreadCount((prev) => (prev || 0) + 1)
 
-          toast(data.title, {
-            description: data.body || '',
+          toast(notif.title, {  // ← ИСПРАВЛЕНО
+            description: notif.body || '',
             duration: 5000,
           })
         }
@@ -87,10 +94,15 @@ export const useNotifications = () => {
 
   const markAsRead = useCallback(async (id: number) => {
     try {
+      // API возвращает обновлённое уведомление (или просто success)
       const updated = await notificationsApi.markAsRead(id)
+      // Не полагаемся на response — просто обновляем локально
+      
       setNotifications((prev) => {
         const safePrev = prev || []
-        return safePrev.map((n) => (n.id === id ? { ...n, ...updated } : n))
+        return safePrev.map((n) => 
+          n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
+        )
       })
       setUnreadCount((prev) => Math.max(0, (prev || 0) - 1))
     } catch (error) {

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SkillResponse(BaseModel):
@@ -6,3 +6,6 @@ class SkillResponse(BaseModel):
     name: str
 
     model_config = {"from_attributes": True}
+
+class CreateSkillRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)

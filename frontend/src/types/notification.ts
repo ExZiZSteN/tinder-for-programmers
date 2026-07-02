@@ -1,7 +1,7 @@
 export interface Notification {
   id: number
   user_id: number
-  type: 'match' | 'swipe_approved' | 'swipe_rejected' | 'system'
+  type: 'new_swipe' | 'swipe_approved' | 'swipe_rejected' | 'new_match' | 'system' 
   title: string
   body: string | null
   payload?: Record<string, any>

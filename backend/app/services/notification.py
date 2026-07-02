@@ -20,32 +20,32 @@ class NotificationService:
 
     async def list(self, user: User) -> NotificationListResponse:
         key = CacheKeys.notifications(user.id)
-    
+
         cached = await cache_get(key)
         if cached:
+            # Восстанавливаем из кэша (там лежит dict)
             return NotificationListResponse.model_validate(cached)
-    
+
         result = await self.db.execute(
             select(Notification)
             .where(Notification.user_id == user.id)
             .order_by(Notification.created_at.desc())
         )
-    
-        notifications = result.scalars().all()
-    
+
+        notifications = list(result.scalars().all())
+
         unread = sum(1 for n in notifications if not n.is_read)
-    
+
         response = NotificationListResponse(
-            notifications=[
-                NotificationResponse.model_validate(n)
-                for n in notifications
-            ],
+            notifications=[NotificationResponse.model_validate(n) for n in notifications],
             unread_count=unread,
         )
-    
-        await cache_set(key, response, ttl=10)
-    
+
+        # Кэшируем как dict (Pydantic v2 совместимый)
+        await cache_set(key, response.model_dump(mode="json"), ttl=10)
+
         return response
+
 
     async def mark_read(self, user: User, notification_id: int) -> NotificationResponse:
         notification = await self.notif_repo.mark_read(notification_id, user.id)
@@ -53,6 +53,7 @@ class NotificationService:
             raise NotFoundException("Notification")
         await self.db.commit()
         await self.db.refresh(notification)
+        await cache_delete(CacheKeys.notifications(user.id))
         await cache_delete(CacheKeys.unread_count(user.id))
         return NotificationResponse.model_validate(notification)
 
@@ -91,6 +92,7 @@ class NotificationService:
             },
         )
 
+        await cache_delete(CacheKeys.notifications(user_id))
         await cache_delete(CacheKeys.unread_count(user_id))
         return notification
 
