@@ -1,53 +1,72 @@
 # Contributing
 
+## Как начать
 
-##  Как начать
+1. Сделайте форк репозитория в свой аккаунт GitHub.
+2. Создайте новую ветку от `main`:
 
-1. Форкнуть репозиторий
-2. Создать ветку от `main`:
    ```bash
    git checkout -b feat/my-feature
    ```
-3. Внести изменения
-4. Написать/обновить тесты
-5. Закоммитить в формате conventional commits:
+
+3. Внесите необходимые изменения в кодовую базу.
+4. Напишите новые или обновите существующие тесты.
+5. Зафиксируйте изменения, используя стандарт **Conventional Commits**:
+
    ```bash
    git commit -m "feat(swipe): add animation on like"
    ```
-6. Push и создать Pull Request
 
-## 📝 Conventional Commits
+6. Выполните `push` в свой форк.
+7. Откройте **Pull Request (PR)** в основную ветку исходного репозитория.
 
-Формат: `<type>(<scope>): <description>`
+---
 
-**Types:**
-- `feat` — новая функциональность
-- `fix` — исправление бага
-- `docs` — документация
-- `style` — форматирование (не влияет на код)
-- `refactor` — рефакторинг
-- `test` — тесты
-- `chore` — инфраструктура, зависимости
+# Conventional Commits
 
-**Примеры:**
+Все коммиты должны соответствовать следующему формату:
+
+```text
+<type>(<scope>): <description>
 ```
+
+## Основные типы коммитов
+
+| Тип | Назначение |
+|------|------------|
+| **feat** | Добавление новой функциональности |
+| **fix** | Исправление ошибок |
+| **docs** | Изменения документации |
+| **style** | Форматирование кода без изменения логики |
+| **refactor** | Рефакторинг без новой функциональности |
+| **test** | Добавление или изменение тестов |
+| **chore** | Конфигурация, зависимости, CI/CD, инфраструктура |
+
+### Примеры корректных коммитов
+
+```text
 feat(auth): add OAuth login
 fix(chat): fix message ordering
 docs(api): update endpoints description
 refactor(ml): extract scoring pipeline
 ```
 
-##  Стиль кода
+---
 
-### Python
-- Line length: 100
-- Type hints обязательны
-- Docstrings в Google-style для публичных API
-- Formatter: ruff
+# Стиль кода
 
-### TypeScript
-- Strict mode
-- Formatter: Prettier
-- Lint: ESLint
+## Python
 
+- Максимальная длина строки — **100 символов**.
+- **Type hints** обязательны для всех аргументов и возвращаемых значений публичных функций.
+- Документирование — **Google-style docstrings**.
+- Форматирование и линтинг — **ruff**.
+
+---
+
+## TypeScript
+
+- Используется **strict mode**.
+- Форматирование — **Prettier**.
+- Статический анализ кода — **ESLint** (рекомендуемая конфигурация для React + TypeScript).
 
